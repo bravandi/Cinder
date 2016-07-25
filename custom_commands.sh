@@ -61,15 +61,15 @@ function c_enterVenv(){
 }
 
 function c_runScheduler(){
-
-export cv_cmd="/usr/bin/python /root/cinder/.venv/bin/cinder-scheduler --config-file=/root/cinder/.venv/etc/cinder/cinder.conf  --log-file=/root/cinder/.venv/var/log/cinder/cinder-scheduler.log"
+#/usr/bin/python
+export cv_cmd="tools/with_venv.sh /root/cinder/.venv/bin/cinder-scheduler --config-file=/root/cinder/.venv/etc/cinder/cinder.conf  --log-file=/root/cinder/.venv/var/log/cinder/cinder-scheduler.log"
 
 	cp_run "$cv_cmd" $1
 }
 
 function c_runApi(){
-
-    cv_cmd="/usr/bin/python /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+#/usr/bin/python 
+    cv_cmd="tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
 
 	cp_run "$cv_cmd" $1
 }
