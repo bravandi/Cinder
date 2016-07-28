@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-RED='\033[0;31m'
-NC='\033[0m' # No Color
 
 function c_killProc(){
 	#              dont know if ` is the right character for shell
@@ -17,11 +15,11 @@ function c_killPyCharmProc(){
 	ps -ef | grep pycharm | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killCinderScheduler(){
+function c_killScheduler(){
 	ps -ef | grep cinder-scheduler | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killCinderApi(){
+function c_killApi(){
 	ps -ef | grep cinder-api | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
@@ -62,14 +60,14 @@ function c_enterVenv(){
 
 function c_runScheduler(){
 #/usr/bin/python
-export cv_cmd="tools/with_venv.sh /root/cinder/.venv/bin/cinder-scheduler --config-file=/root/cinder/.venv/etc/cinder/cinder.conf  --log-file=/root/cinder/.venv/var/log/cinder/cinder-scheduler.log"
+export cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-scheduler --config-file=/root/cinder/.venv/etc/cinder/cinder.conf  --log-file=/root/cinder/.venv/var/log/cinder/cinder-scheduler.log"
 
 	cp_run "$cv_cmd" $1
 }
 
 function c_runApi(){
-#/usr/bin/python 
-    cv_cmd="tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+#/usr/bin/python
+    cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
 
 	cp_run "$cv_cmd" $1
 }
@@ -85,9 +83,3 @@ function c_cdr_SL(){
 }
 
 cd /root/cinder/
-
-
-
-
-
-
