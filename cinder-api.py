@@ -3,7 +3,7 @@
 
 import sys
 
-from cinder.cmd.scheduler import main
+from cinder.cmd.api import main
 
 
 if __name__ == "__main__":

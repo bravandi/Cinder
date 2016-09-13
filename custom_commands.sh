@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 function c_killProc(){
-	#              dont know if ` is the right character for shell
+
+#              dont know if ` is the right character for shell
 #	for KILLPID in `ps aux | grep '$1' | awk ' { print $2;}'`;
 #	do
 #		print $KILLPID;
@@ -15,11 +18,11 @@ function c_killPyCharmProc(){
 	ps -ef | grep pycharm | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killScheduler(){
+function c_killCinderScheduler(){
 	ps -ef | grep cinder-scheduler | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killApi(){
+function c_killCinderApi(){
 	ps -ef | grep cinder-api | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
@@ -68,6 +71,8 @@ export cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-sch
 function c_runApi(){
 #/usr/bin/python
     cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+
+    cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-api.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
 
 	cp_run "$cv_cmd" $1
 }
