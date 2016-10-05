@@ -87,4 +87,27 @@ function c_cdr_SL(){
 	cinder service-list
 }
 
-cd /root/cinder/
+function c_debugClient(){
+
+    # this is not working it can not find pudb.run maybe because its not registered with venv ?
+    # cv_cmd="/root/cinder/tools/with_venv.sh python -m pudb.run /root/python-cinderclient/cinder.py iops-available"
+
+    # python /root/python-cinderclient/cinder.py iops-available
+
+    cv_cmd="python -m pudb.run /root/python-cinderclient/cinder.py iops-available"
+
+    vars=""
+
+    for var in "$@"
+    do
+        vars="$vars$var "
+    done
+
+    printf "$cv_cmd $vars\n"
+
+    eval "$cv_cmd $vars"
+
+	#cp_run "$cv_cmd" $1
+
+}
+#cd /root/cinder/

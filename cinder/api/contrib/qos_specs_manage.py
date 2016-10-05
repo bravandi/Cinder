@@ -14,6 +14,9 @@
 #    under the License.
 
 """The QoS specs extension"""
+# babak
+
+import pdb
 
 from oslo_log import log as logging
 import six
@@ -74,6 +77,15 @@ class QoSSpecsController(wsgi.Controller):
         return self._view_builder.summary_list(req, specs)
 
     def create(self, req, body=None):
+
+        if body['qos_specs']['name'] == "iops_report":
+
+            # pdb.set_trace()
+
+            return {"ack_iops_report": True}
+
+        # babak rpc handlerre
+
         context = req.environ['cinder.context']
         authorize(context)
 
