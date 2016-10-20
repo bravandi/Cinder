@@ -16,7 +16,7 @@
 """The QoS specs extension"""
 # babak
 
-import pdb
+# import pdb
 
 from oslo_log import log as logging
 import six
@@ -32,6 +32,7 @@ from cinder import rpc
 from cinder import utils
 from cinder.volume import qos_specs
 
+import requests
 
 LOG = logging.getLogger(__name__)
 
@@ -80,9 +81,29 @@ class QoSSpecsController(wsgi.Controller):
 
         if body['qos_specs']['name'] == "iops_report":
 
-            # pdb.set_trace()
+            url = "http://10.18.75.100:8080/"
+            # data = {
+            #     'subject': 'Alice-subject',
+            #     'addbbcode18': '%23444444',
+            #     'addbbcode20': '0',
+            #     'helpbox': 'Close all open bbCode tags',
+            #     'message': 'alice-body',
+            #     'poll_title': '',
+            #     'add_poll_option_text': '',
+            #     'poll_length': '',
+            #     'mode': 'newtopic',
+            #     'sid': '5b2e663a3d724cc873053e7ca0f59bd0',
+            #     'f': '1',
+            #     'post': 'Submit',
+            # }
 
-            return {"ack_iops_report": True}
+            print (requests.get(url).text)
+
+            # pe = PerformanceEvaluation()
+            # pdb.set_trace()
+            # pe.test()
+
+            return {"ack_iops_report": requests.get(url).text}
 
         # babak rpc handlerre
 
