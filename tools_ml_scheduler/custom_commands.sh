@@ -18,12 +18,16 @@ function c_killPyCharmProc(){
 	ps -ef | grep pycharm | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killCinderScheduler(){
+function c_killScheduler(){
 	ps -ef | grep cinder-scheduler | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killCinderApi(){
+function c_killApi(){
 	ps -ef | grep cinder-api | grep -v grep | awk '{print $2}' | xargs kill -9
+}
+
+function c_killVolume(){
+	ps -ef | grep cinder-volume | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
 function cp_run(){
@@ -65,6 +69,8 @@ function c_runScheduler(){
 #/usr/bin/python
 export cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-scheduler --config-file=/root/cinder/.venv/etc/cinder/cinder.conf  --log-file=/root/cinder/.venv/var/log/cinder/cinder-scheduler.log"
 
+export cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-scheduler.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf  --log-file=/root/cinder/.venv/var/log/cinder/cinder-scheduler.log"
+
 	cp_run "$cv_cmd" $1
 }
 
@@ -73,6 +79,14 @@ function c_runApi(){
     cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
 
     cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-api.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+
+	cp_run "$cv_cmd" $1
+}
+
+function c_runVolume(){
+#/usr/bin/python
+
+    cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-volume.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
 
 	cp_run "$cv_cmd" $1
 }
