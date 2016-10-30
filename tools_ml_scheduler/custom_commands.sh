@@ -14,6 +14,10 @@ function c_killProc(){
 	ps -ef | grep $1 | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
+function c_killService(){
+	ps -ef | grep service_handler | grep -v grep | awk '{print $2}' | xargs kill -9
+}
+
 function c_killPyCharmProc(){
 	ps -ef | grep pycharm | grep -v grep | awk '{print $2}' | xargs kill -9
 }
