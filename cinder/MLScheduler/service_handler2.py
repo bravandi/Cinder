@@ -1,6 +1,7 @@
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 import urlparse
+import common
 import cgi
 import pdb
 import database
@@ -51,26 +52,21 @@ class Handler(BaseHTTPRequestHandler):
         # Begin the response
         self.send_response(200)
         self.end_headers()
-        self.wfile.write('Client: %s\n' % str(self.client_address))
-        self.wfile.write('User-agent: %s\n' % str(self.headers['user-agent']))
-        self.wfile.write('Path: %s\n' % self.path)
-        self.wfile.write('Form data:\n')
+        # self.wfile.write('Client: %s\n' % str(self.client_address))
+        # self.wfile.write('User-agent: %s\n' % str(self.headers['user-agent']))
+        # self.wfile.write('Path: %s\n' % self.path)
+        # self.wfile.write('Form data:\n')
 
-        # pdb.set_trace()
+        result = self._handle_request(self.path, form)
 
-        database.insert_volume(
-            cinder_id=form["cinder_id"].value,
-            backend_ID=int(form["backend_ID"].value),
-            schedule_response_ID=1,#int(form["schedule_response_ID"].value),
-            capacity=int(form["capacity"].value)
-        )
+        self.wfile.write(result)
 
         # Echo back information about what was posted in the form
-        for field in form.keys():
+        # for field in form.keys():
 
-            field_item = form[field]
+            # field_item = form[field]
 
-            print ("\nLOOOOOOOOOOOOG %s --> value: %s type: %s \n %s" % (field, field_item.value, field_item.type, dir(field_item)))
+            # print ("\nLOOOOOOOOOOOOG %s --> value: %s type: %s \n %s" % (field, field_item.value, field_item.type, dir(field_item)))
 
             # if field_item.filename:
             #     # The field contains an uploaded file
@@ -85,6 +81,44 @@ class Handler(BaseHTTPRequestHandler):
 
 
         return
+
+    def _handle_request(self, path, form):
+
+        common.log("_handle_request: %s" % (path), debug=True)
+        # import pdb
+        # pdb.set_trace()
+
+        if path == "/insert_schedule_response":
+            return database.insert_schedule_response(
+                experiment_id=int(form["experiment_id"].value),
+                volume_request_id=int(form["volume_request_id"].value),
+                response_id=int(form["response_id"].value),
+                create_clock=int(form["create_clock"].value),
+                create_time=form["create_time"].value
+            )
+
+        if path == "/insert_volume":
+
+            return database.insert_volume(
+                experiment_id=int(form["experiment_id"].value),
+                cinder_id=form["cinder_id"].value,
+                backend_cinder_id=form["backend_cinder_id"].value,
+                schedule_response_id=int(form["schedule_response_id"].value),
+                capacity=int(form["capacity"].value),
+                create_clock=int(form["create_clock"].value),
+                create_time=form["create_time"].value
+            )
+
+        if path == "/insert_volume_request":
+            return database.insert_volume_request(
+                workload_id=int(form["workload_id"].value),
+                capacity=int(form["capacity"].value),
+                type=int(form["type"].value),
+                read_iops=int(form["read_iops"].value),
+                write_iops=int(form["write_iops"].value),
+                create_clock=int(form["create_clock"].value),
+                create_time=form["create_time"].value
+            )
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):

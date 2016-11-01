@@ -28,6 +28,7 @@ from cinder.i18n import _, _LE, _LW
 from cinder.scheduler import driver
 from cinder.scheduler import scheduler_options
 from cinder.volume import utils
+import cinder.MLScheduler.communication as mlscheduler_communication
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -84,8 +85,20 @@ class FilterScheduler(driver.Scheduler):
         weighed_host = self._schedule(context, request_spec,
                                       filter_properties)
 
+        # use displan name of volume to transfer the volume_request id
+
         if not weighed_host:
+            schedule_response_id = mlscheduler_communication.insert_schedule_response(
+                experiment_id=1,
+                volume_request_id=int(request_spec['volume_properties']['display_name']),
+                response_id=mlscheduler_communication.ScheduleResponseType.rejected())
+
             raise exception.NoValidHost(reason=_("No weighed hosts available"))
+
+        schedule_response_id = mlscheduler_communication.insert_schedule_response(
+            experiment_id=1,
+            volume_request_id=int(request_spec['volume_properties']['display_name']),
+            response_id=mlscheduler_communication.ScheduleResponseType.accepted())
 
         host = weighed_host.obj.host
         volume_id = request_spec['volume_id']
@@ -100,6 +113,13 @@ class FilterScheduler(driver.Scheduler):
         self.volume_rpcapi.create_volume(context, updated_volume, host,
                                          request_spec, filter_properties,
                                          allow_reschedule=True)
+        # todo fix experiment id
+        mlscheduler_communication.insert_volume(
+            experiment_id=1,
+            cinder_id=volume_id,
+            backend_cinder_id=host,
+            schedule_response=schedule_response_id,
+            capacity=1)
 
     def host_passes_filters(self, context, host, request_spec,
                             filter_properties):
