@@ -12,6 +12,39 @@ def __create_connection():
                                           database='MLScheduler')
 
 
+def __execute_delete_procedure(name, args):
+
+    try:
+        conn = __create_connection()
+
+        cursor = conn.cursor()
+
+        output = cursor.callproc(name, args)
+
+        conn.commit()
+
+        # print out the result
+        # for result in cursor.stored_results():
+        #     print(result.fetchall())
+
+        common.log("DELETE Called: %s args-output: %s" % (name, args), debug=True)
+
+        # return inser_id
+
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print("Something is wrong with your user name or password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print("Database does not exist")
+        else:
+            print(err)
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
 def __execute_insert_procedure(name, args):
     """
     calls a stored procedure for insert only, must have an out variable to return the inserted id
@@ -40,7 +73,8 @@ def __execute_insert_procedure(name, args):
         output = list(output)
         inser_id = output[len(output) - 1]
 
-        common.log("INSERT Called: %s ID: %s args-output: %s" % (name, inser_id, output), debug=True)
+        # common.log("INSERT Called: %s ID: %s args-output: %s" % (name, inser_id, output), debug=True)
+        common.log("PROCEDURE CALLED: %s ID: %s inser_id: %s" % (name, inser_id, inser_id), debug=True)
 
         return inser_id
 
@@ -53,9 +87,27 @@ def __execute_insert_procedure(name, args):
             print(err)
 
     finally:
-        conn.commit()
+
         cursor.close()
         conn.close()
+
+
+def delete_volume(
+        id, #			VARCHAR(36),
+        cinder_id, #		VARCHAR(36),
+        delete_clock, #		INT(11),
+        delete_time #			    INT(11),
+    ):
+
+    args = (
+        id,
+        cinder_id,
+        delete_clock,
+        delete_time
+    )
+
+    return __execute_delete_procedure("delete_volume", args)
+
 
 def insert_schedule_response(
 	experiment_id, #			VARCHAR(36),
@@ -104,24 +156,29 @@ def insert_volume_performance_meter(
         experiment_id,
         backend_id,
         volume_id,
+        cinder_volume_id,
         read_iops,
         write_iops,
+        duration,
         sla_violation_id,
         io_test_output,
+        terminate_wait,
         create_clock,
         create_time):
-
 
     args = (
         experiment_id,  # experiment_ID				bigint,
         backend_id,  # backend_ID					bigint,
-        volume_id,  # volume_ID					bigint,
+        volume_id,  # volume_ID					    bigint,
+        cinder_volume_id, #cinder_volume_id         VARCHAR(36)
         read_iops,  # read_IOPS						int,
-        write_iops,  # write_IOPS						int,
-        sla_violation_id,  # SLA_violation_ID				int,
-        io_test_output,  # io_test_output			    LONGTEXT
-        create_clock,  # create_clock					int,
-        create_time,  # create_time		DateTime,
+        write_iops,  # write_IOPS					int,
+        duration, # duration                        float,
+        sla_violation_id,  # SLA_violation_ID		int,
+        io_test_output,  # io_test_output		    LONGTEXT
+        terminate_wait, # terminate_wait            int,
+        create_clock,  # create_clock				int,
+        create_time,  # create_time		            DateTime,
     )
 
     return __execute_insert_procedure("insert_volume_performance_meter", args)

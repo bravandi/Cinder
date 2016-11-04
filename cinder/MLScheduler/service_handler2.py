@@ -84,9 +84,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_request(self, path, form):
 
-        common.log("_handle_request: %s" % (path), debug=True)
-        # import pdb
-        # pdb.set_trace()
+        # common.log("_handle_request: %s" % (path), debug=True)
+
+        if path == "/delete_volume":
+            return database.delete_volume(
+                id=int(form["id"].value),
+                cinder_id=form["cinder_id"].value,
+                delete_clock=int(form["delete_clock"].value),
+                delete_time=form["delete_time"].value
+            )
 
         if path == "/insert_schedule_response":
             return database.insert_schedule_response(
@@ -120,11 +126,32 @@ class Handler(BaseHTTPRequestHandler):
                 create_time=form["create_time"].value
             )
 
+        if path == "/insert_volume_performance_meter":
+
+            io_test_output=""
+            if form.has_key("io_test_output"):
+                io_test_output=form["io_test_output"].value
+
+            return database.insert_volume_performance_meter(
+                experiment_id=int(form["experiment_id"].value),
+                backend_id=int(form["backend_id"].value),
+                volume_id=int(form["volume_id"].value),
+                cinder_volume_id=form["cinder_volume_id"].value,
+                read_iops=int(form["read_iops"].value),
+                write_iops=int(form["write_iops"].value),
+                duration=float(form["duration"].value),
+                sla_violation_id=int(form["sla_violation_id"].value),
+                io_test_output=io_test_output,
+                terminate_wait=float(form["terminate_wait"].value),
+                create_clock=int(form["create_clock"].value),
+                create_time=form["create_time"].value
+            )
+
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
 
 if __name__ == '__main__':
     server = ThreadedHTTPServer(('10.18.75.100', 8888), Handler)
-    print 'Starting server, use <Ctrl-C> to stop'
+    common.log('Starting server, use <Ctrl-C> to stop')
     server.serve_forever()

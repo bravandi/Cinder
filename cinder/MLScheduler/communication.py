@@ -28,7 +28,10 @@ def insert_volume(experiment_id,
                schedule_response,
                capacity,
                create_clock=0,
-               create_time=datetime.now()):
+               create_time=None):
+
+    if create_time is None:
+        create_time = datetime.now()
 
     data = {
         "experiment_id": experiment_id,
@@ -47,7 +50,10 @@ def insert_schedule_response(
         volume_request_id,
         response_id,
         create_clock=0,
-        create_time=datetime.now()):
+        create_time=None):
+
+    if create_time is None:
+        create_time = datetime.now()
 
     data = {
         "experiment_id": experiment_id,
