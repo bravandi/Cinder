@@ -88,41 +88,41 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/delete_volume":
             return database.delete_volume(
-                id=int(form["id"].value),
+                id=long(form["id"].value),
                 cinder_id=form["cinder_id"].value,
-                delete_clock=int(form["delete_clock"].value),
+                delete_clock=long(form["delete_clock"].value),
                 delete_time=form["delete_time"].value
             )
 
         if path == "/insert_schedule_response":
             return database.insert_schedule_response(
-                experiment_id=int(form["experiment_id"].value),
-                volume_request_id=int(form["volume_request_id"].value),
-                response_id=int(form["response_id"].value),
-                create_clock=int(form["create_clock"].value),
+                experiment_id=long(form["experiment_id"].value),
+                volume_request_id=long(form["volume_request_id"].value),
+                response_id=long(form["response_id"].value),
+                create_clock=long(form["create_clock"].value),
                 create_time=form["create_time"].value
             )
 
         if path == "/insert_volume":
 
             return database.insert_volume(
-                experiment_id=int(form["experiment_id"].value),
+                experiment_id=long(form["experiment_id"].value),
                 cinder_id=form["cinder_id"].value,
                 backend_cinder_id=form["backend_cinder_id"].value,
-                schedule_response_id=int(form["schedule_response_id"].value),
-                capacity=int(form["capacity"].value),
-                create_clock=int(form["create_clock"].value),
+                schedule_response_id=long(form["schedule_response_id"].value),
+                capacity=long(form["capacity"].value),
+                create_clock=long(form["create_clock"].value),
                 create_time=form["create_time"].value
             )
 
         if path == "/insert_volume_request":
             return database.insert_volume_request(
-                workload_id=int(form["workload_id"].value),
-                capacity=int(form["capacity"].value),
-                type=int(form["type"].value),
-                read_iops=int(form["read_iops"].value),
-                write_iops=int(form["write_iops"].value),
-                create_clock=int(form["create_clock"].value),
+                workload_id=long(form["workload_id"].value),
+                capacity=long(form["capacity"].value),
+                type=long(form["type"].value),
+                read_iops=long(form["read_iops"].value),
+                write_iops=long(form["write_iops"].value),
+                create_clock=long(form["create_clock"].value),
                 create_time=form["create_time"].value
             )
 
@@ -133,17 +133,37 @@ class Handler(BaseHTTPRequestHandler):
                 io_test_output=form["io_test_output"].value
 
             return database.insert_volume_performance_meter(
-                experiment_id=int(form["experiment_id"].value),
-                backend_id=int(form["backend_id"].value),
-                volume_id=int(form["volume_id"].value),
+                experiment_id=long(form["experiment_id"].value),
+                tenant_id=long(form["tenant_id"].value),
+                backend_id=long(form["backend_id"].value),
+                volume_id=long(form["volume_id"].value),
                 cinder_volume_id=form["cinder_volume_id"].value,
-                read_iops=int(form["read_iops"].value),
-                write_iops=int(form["write_iops"].value),
+                read_iops=long(form["read_iops"].value),
+                write_iops=long(form["write_iops"].value),
                 duration=float(form["duration"].value),
-                sla_violation_id=int(form["sla_violation_id"].value),
+                sla_violation_id=long(form["sla_violation_id"].value),
                 io_test_output=io_test_output,
                 terminate_wait=float(form["terminate_wait"].value),
-                create_clock=int(form["create_clock"].value),
+                create_clock=long(form["create_clock"].value),
+                create_time=form["create_time"].value
+            )
+
+        if path == "/insert_workload_generator":
+
+            command = ""
+            if form.has_key("command"):
+                command = form["command"].value
+
+            output = ""
+            if form.has_key("output"):
+                output = form["output"].value
+
+            return database.insert_workload_generator(
+                tenant_id=long(form["tenant_id"].value),
+                duration=float(form["duration"].value),
+                command=command,
+                output=output,
+                create_clock=long(form["create_clock"].value),
                 create_time=form["create_time"].value
             )
 

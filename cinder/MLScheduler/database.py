@@ -154,6 +154,7 @@ def insert_volume(
 
 def insert_volume_performance_meter(
         experiment_id,
+        tenant_id,
         backend_id,
         volume_id,
         cinder_volume_id,
@@ -168,6 +169,7 @@ def insert_volume_performance_meter(
 
     args = (
         experiment_id,  # experiment_ID				bigint,
+        tenant_id,
         backend_id,  # backend_ID					bigint,
         volume_id,  # volume_ID					    bigint,
         cinder_volume_id, #cinder_volume_id         VARCHAR(36)
@@ -182,6 +184,27 @@ def insert_volume_performance_meter(
     )
 
     return __execute_insert_procedure("insert_volume_performance_meter", args)
+
+
+def insert_workload_generator(
+    tenant_id, #				bigint,
+    duration, #					float,
+    command, #					LONGTEXT,
+    output, #					LONGTEXT,
+    create_clock, #			INT(11),
+    create_time):
+
+    args = (
+        tenant_id,  # bigint,
+        duration,  # INT(11),
+        command,  # INT(11),
+        output,  # INT(11),
+        create_clock,  # INT(11),
+        create_time  # DATETIME(6)
+    )
+
+    return __execute_insert_procedure("insert_workload_generator", args)
+
 
 def insert_volume_request(
     workload_id, #		bigint,
