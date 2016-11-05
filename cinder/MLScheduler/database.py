@@ -189,6 +189,8 @@ def insert_volume_performance_meter(
 def insert_workload_generator(
     tenant_id, #				bigint,
     duration, #					float,
+    read_iops,
+        write_iops,
     command, #					LONGTEXT,
     output, #					LONGTEXT,
     create_clock, #			INT(11),
@@ -197,6 +199,8 @@ def insert_workload_generator(
     args = (
         tenant_id,  # bigint,
         duration,  # INT(11),
+        read_iops,
+        write_iops,
         command,  # INT(11),
         output,  # INT(11),
         create_clock,  # INT(11),

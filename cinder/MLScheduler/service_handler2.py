@@ -161,6 +161,8 @@ class Handler(BaseHTTPRequestHandler):
             return database.insert_workload_generator(
                 tenant_id=long(form["tenant_id"].value),
                 duration=float(form["duration"].value),
+                read_iops=long(form["read_iops"].value),
+                write_iops=long(form["write_iops"].value),
                 command=command,
                 output=output,
                 create_clock=long(form["create_clock"].value),
