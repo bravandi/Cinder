@@ -148,6 +148,31 @@ class Handler(BaseHTTPRequestHandler):
                 create_time=form["create_time"].value
             )
 
+        if path == "/insert_experiment":
+
+            comment = ""
+            if form.has_key("comment"):
+                comment = form["comment"].value
+
+            scheduler_algorithm = ""
+            if form.has_key("scheduler_algorithm"):
+                comment = form["scheduler_algorithm"].value
+
+            config = ""
+            if form.has_key("config"):
+                comment = form["config"].value
+
+            # import pdb
+            # pdb.set_trace()
+
+            return database.insert_experiment(
+                workload_id=long(form["workload_id"].value),
+                comment=comment,
+                scheduler_algorithm=scheduler_algorithm,
+                config=config,
+                create_time=form["create_time"].value
+            )
+
         if path == "/insert_workload_generator":
 
             command = ""

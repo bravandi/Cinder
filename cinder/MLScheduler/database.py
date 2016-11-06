@@ -186,6 +186,24 @@ def insert_volume_performance_meter(
     return __execute_insert_procedure("insert_volume_performance_meter", args)
 
 
+def insert_experiment(
+        workload_id,  # bigint,
+        comment, # MEDIUMTEXT
+        scheduler_algorithm, # MEDIUMTEXT
+        config,  # LONGTEXT,
+        create_time):
+
+    args = (
+        workload_id,  # bigint,
+        comment,  # MEDIUMTEXT
+        scheduler_algorithm,  # MEDIUMTEXT
+        config,  # LONGTEXT,
+        create_time
+    )
+
+    return __execute_insert_procedure("insert_experiment", args)
+
+
 def insert_workload_generator(
     tenant_id, #				bigint,
     duration, #					float,
