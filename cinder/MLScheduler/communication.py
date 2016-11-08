@@ -21,13 +21,14 @@ class ScheduleResponseType:
     def rejected_capacity_iops(): return 5
 
 
-def insert_volume(experiment_id,
-               cinder_id,
-               backend_cinder_id,
-               schedule_response,
-               capacity,
-               create_clock=0,
-               create_time=None):
+def insert_volume(
+        experiment_id,
+        cinder_id,
+        backend_cinder_id,
+        schedule_response,
+        capacity,
+        create_clock=0,
+        create_time=None):
 
     if create_time is None:
         create_time = datetime.now()
@@ -51,7 +52,6 @@ def insert_experiment(
         scheduler_algorithm,
         config,
         create_time=None):
-
 
     if create_time is None:
         create_time = datetime.now()

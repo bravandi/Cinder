@@ -95,6 +95,16 @@ function c_runVolume(){
 	cp_run "$cv_cmd" $1
 }
 
+function c_runServiceHandler(){
+#/usr/bin/python
+
+#    cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-volume.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+
+    cv_cmd="python /root/cinder/cinder/MLScheduler/service_handler.py"
+
+	cp_run "$cv_cmd" $1
+}
+
 function cp_print(){
     	printf "	$1 ${RED} $2 ${NC}\n"
 }

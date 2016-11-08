@@ -1,21 +1,35 @@
 import mysql.connector
 from datetime import datetime
 from mysql.connector import errorcode
-import uuid
-import common
+import MySQLdb
+import MySQLdb.cursors
+import pdb
+import tools
 # from mysql.connector import MySQLConnection, Error
 
-def __create_connection():
 
+def __create_connection_for_insert_delete():
+    """
+    I used out parameter in my stored procedures and it is not supported in MySQLdb. So for now I will use mysql.connector for insert and delete. In order to use MySQLdb I need to use select stateent instead of out variable in the stored procedures. Overll, that will be a lot of changes that I dont have time for now.
+
+    Compatibility note: PEP-249 specifies that if there are OUT or INOUT parameters, the modified values are to be returned. This is not consistently possible with MySQL. Stored procedure arguments must be passed as server variables, and can only be returned with a SELECT statement. Since a stored procedure may return zero or more result sets, it is impossible for MySQLdb to determine if there are result sets to fetch before the modified parmeters are accessible.
+
+    :return:
+    """
     return mysql.connector.connect(user='babak', password='123',
                                           host='10.18.75.100',
                                           database='MLScheduler')
 
 
+def __create_connection_for_get():
+
+    return MySQLdb.connect(user='babak', passwd='123', host='10.18.75.100', db='MLScheduler')
+
+
 def __execute_delete_procedure(name, args):
 
     try:
-        conn = __create_connection()
+        conn = __create_connection_for_insert_delete()
 
         cursor = conn.cursor()
 
@@ -27,7 +41,7 @@ def __execute_delete_procedure(name, args):
         # for result in cursor.stored_results():
         #     print(result.fetchall())
 
-        common.log("DELETE Called: %s args-output: %s" % (name, args), debug=True)
+        tools.log("DELETE Called: %s args-output: %s" % (name, args), debug=True)
 
         # return inser_id
 
@@ -38,6 +52,39 @@ def __execute_delete_procedure(name, args):
             print("Database does not exist")
         else:
             print(err)
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+def execute_get_procedure(name, args=()):
+
+    try:
+        conn = __create_connection_for_get()
+
+        cursor = conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
+
+        cursor.callproc(name, args)
+
+        result = cursor.fetchall()
+
+        tools.log("GET Called: %s ARGS: %s OUTPUT: %s" % (name, args, result), debug=True)
+
+        return result
+
+    except MySQLdb.Error as err:
+
+        print (err)
+
+    # except mysql.connector.Error as err:
+    #     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+    #         print("Something is wrong with your user name or password")
+    #     elif err.errno == errorcode.ER_BAD_DB_ERROR:
+    #         print("Database does not exist")
+    #     else:
+    #         print(err)
 
     finally:
 
@@ -58,7 +105,7 @@ def __execute_insert_procedure(name, args):
         args.append(-1)
         args = tuple(args)
 
-        conn = __create_connection()
+        conn = __create_connection_for_insert_delete()
 
         cursor = conn.cursor()
 
@@ -71,20 +118,23 @@ def __execute_insert_procedure(name, args):
         #     print(result.fetchall())
 
         output = list(output)
-        inser_id = output[len(output) - 1]
+        insert_id = output[len(output) - 1]
 
-        # common.log("INSERT Called: %s ID: %s args-output: %s" % (name, inser_id, output), debug=True)
-        common.log("PROCEDURE CALLED: %s ID: %s inser_id: %s" % (name, inser_id, inser_id), debug=True)
+        tools.log("PROCEDURE CALLED: %s OUTPUT: %s" % (name, output), debug=True)
 
-        return inser_id
+        return insert_id
 
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
-        else:
-            print(err)
+    except MySQLdb.Error as err:
+
+        print (err)
+
+    # except mysql.connector.Error as err:
+    #     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+    #         print("Something is wrong with your user name or password")
+    #     elif err.errno == errorcode.ER_BAD_DB_ERROR:
+    #         print("Database does not exist")
+    #     else:
+    #         print(err)
 
     finally:
 
