@@ -3,8 +3,9 @@ from StringIO import StringIO
 
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
-from cinderclient import client as c_client
 from novaclient import client as n_client
+from cinderclient import client as c_client
+
 
 
 def get_session():

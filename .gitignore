@@ -36,3 +36,4 @@ api-ref/build
 
 # Files created by releasenotes build
 releasenotes/build
+cinder/MLScheduler/tmp/request_spec.json

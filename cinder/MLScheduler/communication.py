@@ -47,11 +47,22 @@ def insert_volume(
 
 
 def insert_experiment(
-        workload_id,
         comment,
         scheduler_algorithm,
         config,
+        workload_comment="",
+        workload_generate_method=0,
+        workload_id=0,
         create_time=None):
+    """
+
+    :param comment:
+    :param scheduler_algorithm:
+    :param config:
+    :param workload_id: if equal to 0 it create a new workload by capturing the running experiment requests
+    :param create_time:
+    :return:
+    """
 
     if create_time is None:
         create_time = datetime.now()
@@ -61,6 +72,8 @@ def insert_experiment(
         "comment": comment,
         "scheduler_algorithm": scheduler_algorithm,
         "config": config,
+        "workload_comment": workload_comment,
+        "workload_generate_method": workload_generate_method,
         "create_time": create_time
     }
 

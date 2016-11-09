@@ -1,10 +1,20 @@
 import tools
+import os
 import communication
 
 class Experiment:
 
     def __init__(self):
         self.servers = []
+
+        experiment_id = communication.insert_experiment(
+            workload_id=1,
+            comment='',
+            scheduler_algorithm='',
+            config=''
+        )
+
+        tools.log("New wxperiment id: %s" % str(experiment_id))
 
         nova = tools.get_nova_client()
         for server in nova.servers.list():
@@ -36,6 +46,8 @@ class Experiment:
 
             Experiment._run_command(server, "echo '%s' > ~/tenantid" % server["id"])
 
+            Experiment._run_command(server, "source ~/MLSchedulerAgent/other/fio_install.sh")
+
     @staticmethod
     def _run_command(server, command):
 
@@ -50,7 +62,14 @@ class Experiment:
 
     @staticmethod
     def _create_ssh_clients(server_ip):
-        f = open('D:/Tools/Keys/VM-test/VM-test.pem', 'r')
+        f = open(
+            os.path.join(
+                os.path.expanduser('~'),
+                "keys",
+                "vm-test",
+                "vm-test.pem"
+            ), 'r')
+
         s = f.read()
 
         client = tools.SshClient(
@@ -64,11 +83,10 @@ class Experiment:
 
 if __name__ == '__main__':
 
-    f = open('D:/Tools/Keys/VM-test/VM-test.pem', 'r')
-    s = f.read()
-
     e = Experiment()
-    e.clone_or_pull_agent()
+
+    # e.clone_or_pull_agent()
+
     # e.close_all_ssh_client()
 
     # client = tools.SshClient(

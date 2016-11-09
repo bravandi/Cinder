@@ -87,17 +87,21 @@ class FilterScheduler(driver.Scheduler):
 
         # use displan name of volume to transfer the volume_request id
 
+        experiment_id_schedule_response_id = request_spec['volume_properties']['display_name'].split(",")
+        experiment_id_schedule_response_id[0] = int(experiment_id_schedule_response_id[0])
+        experiment_id_schedule_response_id[1] = int(experiment_id_schedule_response_id[1])
+
         if not weighed_host:
             schedule_response_id = mlscheduler_communication.insert_schedule_response(
-                experiment_id=1,
-                volume_request_id=int(request_spec['volume_properties']['display_name']),
+                experiment_id=experiment_id_schedule_response_id[0],
+                volume_request_id=experiment_id_schedule_response_id[1],
                 response_id=mlscheduler_communication.ScheduleResponseType.rejected())
 
             raise exception.NoValidHost(reason=_("No weighed hosts available"))
 
         schedule_response_id = mlscheduler_communication.insert_schedule_response(
-            experiment_id=1,
-            volume_request_id=int(request_spec['volume_properties']['display_name']),
+            experiment_id=experiment_id_schedule_response_id[0],
+            volume_request_id=experiment_id_schedule_response_id[1],
             response_id=mlscheduler_communication.ScheduleResponseType.accepted())
 
         host = weighed_host.obj.host
@@ -113,13 +117,14 @@ class FilterScheduler(driver.Scheduler):
         self.volume_rpcapi.create_volume(context, updated_volume, host,
                                          request_spec, filter_properties,
                                          allow_reschedule=True)
+
         # todo fix experiment id
         mlscheduler_communication.insert_volume(
-            experiment_id=1,
+            experiment_id=experiment_id_schedule_response_id[0],
             cinder_id=volume_id,
             backend_cinder_id=host,
             schedule_response=schedule_response_id,
-            capacity=1)
+            capacity=request_spec['volume']['size'])
 
     def host_passes_filters(self, context, host, request_spec,
                             filter_properties):

@@ -4,6 +4,7 @@ import urlparse
 import tools
 import cgi
 import pdb
+import json
 import database
 
 class Handler(BaseHTTPRequestHandler):
@@ -34,7 +35,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
         result = self._handle_request(parsed_path.path, urlparse.parse_qs(parsed_path.query))
-        self.wfile.write(result)
+
+        # todo convert any datetime variable to string otherwise wont serialzie
+        self.wfile.write(json.dumps(result))
 
         return
 
@@ -89,7 +92,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/get_current_experiment":
 
-            experimet = database.execute_get_procedure("get_experiment")
+            experimet = database.execute_get_procedure("get_current_experiment")[0]
 
             return experimet
 
@@ -125,6 +128,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/insert_volume_request":
             return database.insert_volume_request(
                 workload_id=long(parameters["workload_id"].value),
+                experiment_id=long(parameters["experiment_id"].value),
                 capacity=long(parameters["capacity"].value),
                 type=long(parameters["type"].value),
                 read_iops=long(parameters["read_iops"].value),
@@ -139,9 +143,14 @@ class Handler(BaseHTTPRequestHandler):
             if parameters.has_key("io_test_output"):
                 io_test_output=parameters["io_test_output"].value
 
+            nova_id = ""
+            if parameters.has_key("nova_id"):
+                io_test_output = parameters["nova_id"].value
+
             return database.insert_volume_performance_meter(
                 experiment_id=long(parameters["experiment_id"].value),
                 tenant_id=long(parameters["tenant_id"].value),
+                nova_id=nova_id,
                 backend_id=long(parameters["backend_id"].value),
                 volume_id=long(parameters["volume_id"].value),
                 cinder_volume_id=parameters["cinder_volume_id"].value,
@@ -169,6 +178,10 @@ class Handler(BaseHTTPRequestHandler):
             if parameters.has_key("config"):
                 comment = parameters["config"].value
 
+            workload_comment = ""
+            if parameters.has_key("workload_comment"):
+                comment = parameters["workload_comment"].value
+
             # import pdb
             # pdb.set_trace()
 
@@ -177,6 +190,8 @@ class Handler(BaseHTTPRequestHandler):
                 comment=comment,
                 scheduler_algorithm=scheduler_algorithm,
                 config=config,
+                workload_comment=workload_comment,
+                workload_generate_method=int(parameters["workload_generate_method"].value),
                 create_time=parameters["create_time"].value
             )
 
@@ -198,6 +213,14 @@ class Handler(BaseHTTPRequestHandler):
                 command=command,
                 output=output,
                 create_clock=long(parameters["create_clock"].value),
+                create_time=parameters["create_time"].value
+            )
+
+        if path == "/insert_tenant":
+
+            return database.insert_tenant(
+                experiment_id=long(parameters["experiment_id"].value),
+                nova_id=parameters["nova_id"].value,
                 create_time=parameters["create_time"].value
             )
 
