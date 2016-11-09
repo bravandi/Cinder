@@ -50,7 +50,7 @@ def insert_experiment(
         comment,
         scheduler_algorithm,
         config,
-        workload_comment="",
+        workload_comment=None,
         workload_generate_method=0,
         workload_id=0,
         create_time=None):

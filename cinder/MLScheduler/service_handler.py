@@ -139,13 +139,13 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/insert_volume_performance_meter":
 
-            io_test_output=""
+            io_test_output = None
             if parameters.has_key("io_test_output"):
                 io_test_output=parameters["io_test_output"].value
 
-            nova_id = ""
+            nova_id = None
             if parameters.has_key("nova_id"):
-                io_test_output = parameters["nova_id"].value
+                nova_id = parameters["nova_id"].value
 
             return database.insert_volume_performance_meter(
                 experiment_id=long(parameters["experiment_id"].value),
@@ -197,16 +197,22 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/insert_workload_generator":
 
-            command = ""
+            command = None
             if parameters.has_key("command"):
                 command = parameters["command"].value
 
-            output = ""
+            output = None
             if parameters.has_key("output"):
                 output = parameters["output"].value
 
+            nova_id = None
+            if parameters.has_key("nova_id"):
+                nova_id = parameters["nova_id"].value
+
             return database.insert_workload_generator(
+                experiment_id=long(parameters["experiment_id"].value),
                 tenant_id=long(parameters["tenant_id"].value),
+                nova_id=nova_id,
                 duration=float(parameters["duration"].value),
                 read_iops=long(parameters["read_iops"].value),
                 write_iops=long(parameters["write_iops"].value),
