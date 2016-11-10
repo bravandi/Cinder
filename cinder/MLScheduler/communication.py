@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime
+import json
 
 __server_url = 'http://CinderDevelopmentEnv:8888/'
 
@@ -104,6 +105,13 @@ def insert_schedule_response(
 def _parse_response(response):
 
     return int(response.content)
+
+
+def get_current_experiment():
+    ex = requests.get(__server_url + "get_current_experiment")
+
+    return json.loads(ex.text)
+
 
 if __name__ == "__main__":
     # print add_volume(

@@ -1,20 +1,29 @@
 import tools
 import os
 import communication
+import sys
 
 class Experiment:
 
-    def __init__(self):
+    experiment = None
+
+    def __init__(self, add_new_experiment, print_stderr = False):
+
+        self.print_stderr = print_stderr
         self.servers = []
 
-        experiment_id = communication.insert_experiment(
-            workload_id=1,
-            comment='',
-            scheduler_algorithm='',
-            config=''
-        )
+        if add_new_experiment:
 
-        tools.log("New wxperiment id: %s" % str(experiment_id))
+            experiment_id = communication.insert_experiment(
+                workload_id=1,
+                comment='',
+                scheduler_algorithm='',
+                config=''
+            )
+
+        Experiment.experiment = communication.get_current_experiment()
+
+        tools.log("New wxperiment id: %s" % str(Experiment.experiment["id"]))
 
         nova = tools.get_nova_client()
         for server in nova.servers.list():
@@ -34,29 +43,42 @@ class Experiment:
             ssh_client = server["ssh"]
             ssh_client.close()
 
-    def clone_or_pull_agent(self):
+    def initialize_commands(self):
 
         for server in self.servers:
 
-            ret = Experiment._run_command(server, 'git clone https://github.com/bravandi/MLSchedulerAgent.git')
+            ret = self._run_command(server, 'git clone https://github.com/bravandi/MLSchedulerAgent.git')
 
             if ret["retval"] == 128:
 
-                Experiment._run_command(server, "git -C ~/MLSchedulerAgent/ pull")
+                self._run_command(server, "git -C ~/MLSchedulerAgent/ pull")
 
-            Experiment._run_command(server, "echo '%s' > ~/tenantid" % server["id"])
+            self._run_command(server, "echo '%s' > ~/tenantid" % server["id"])
 
-            Experiment._run_command(server, "source ~/MLSchedulerAgent/other/fio_install.sh")
+            self._run_command(server, "source ~/MLSchedulerAgent/other/fio_install.sh")
 
-    @staticmethod
-    def _run_command(server, command):
+            self._run_command(server, "source ~/MLSchedulerAgent/other/custom_commands.sh")
+
+            self._run_command(server, "c_killPerformanceEvaluation")
+
+            self._run_command(server, "c_killWorkloadGenerator", show_full_output=True)
+
+            self._run_command(server, "")
+
+            return
+
+    def _run_command(self, server, command, show_full_output=False):
 
         print ("{RUNNING %s} %s\n" % (server["ip"], command))
 
         ret = server["ssh"].execute(command)
 
-        print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s ERR: %s \n" %
-               (server["ip"], ret["out"], ret["retval"], ret["err"]))
+        stderr = ""
+        if self.print_stderr or show_full_output:
+            stderr = "ERR: %s" % ret["err"]
+
+        print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s %s \n" %
+               (server["ip"], ret["out"], ret["retval"], stderr))
 
         return ret
 
@@ -83,44 +105,15 @@ class Experiment:
 
 if __name__ == '__main__':
 
-    e = Experiment()
+    add_new_experiment = False
+    if "new-exp" in sys.argv:
+        add_new_experiment = True
 
-    # e.clone_or_pull_agent()
+    e = Experiment(
+        add_new_experiment=add_new_experiment
+    )
 
-    # e.close_all_ssh_client()
+    e.initialize_commands()
 
-    # client = tools.SshClient(
-    #     host='10.18.75.174',
-    #     port=22,
-    #     key=s,
-    #     username='ubuntu',
-    #     password='')
+    e.close_all_ssh_client()
 
-    try:
-       # ret = client.execute('git clone https://github.com/bravandi/MLSchedulerAgent.git')
-       #
-       # print "  ".join(ret["out"]), "  E ".join(ret["err"]), ret["retval"]
-       #
-       # if ret["retval"] == 128:
-       #
-       #     ret = client.execute("git -C /home/ubuntu/MLSchedulerAgent/ pull")
-       #
-       # print "  ".join(ret["out"]), "  E ".join(ret["err"]), ret["retval"]
-
-
-
-
-        pass
-
-    finally:
-      # client.close()
-        pass
-
-    # print communication.insert_experiment(
-    #     workload_id=1,
-    #     comment='',
-    #     scheduler_algorithm='',
-    #     config=''
-    # )
-
-    pass

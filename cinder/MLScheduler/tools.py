@@ -7,7 +7,6 @@ from novaclient import client as n_client
 from cinderclient import client as c_client
 
 
-
 def get_session():
     auth = v3.Password(auth_url="http://controller:35357/v3",
                        username='admin',
