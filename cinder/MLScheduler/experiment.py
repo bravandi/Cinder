@@ -25,14 +25,14 @@ class Experiment:
 
         Experiment.experiment = communication.get_current_experiment()
 
-        tools.log("New wxperiment id: %s" % str(Experiment.experiment["id"]))
+        tools.log("Experiment id: %s" % str(Experiment.experiment["id"]))
 
         nova = tools.get_nova_client()
         for server in nova.servers.list():
             server_ip = server.networks['provider'][0]
             ssh_client = Experiment._create_ssh_clients(server_ip)
 
-            if server_ip == '10.18.75.174':
+            if server_ip == '10.18.75.170':
                 continue
 
             self.servers.append({
