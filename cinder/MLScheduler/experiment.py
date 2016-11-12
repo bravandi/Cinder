@@ -3,13 +3,15 @@ import os
 import communication
 import sys
 
+
 class Experiment:
 
     experiment = None
 
-    def __init__(self, add_new_experiment, print_stderr = False):
+    def __init__(self, add_new_experiment, print_output_if_have_error=False, print_output=False):
 
-        self.print_stderr = print_stderr
+        self.print_output_if_have_error = print_output_if_have_error
+        self.print_output = print_output
         self.servers = []
 
         if add_new_experiment:
@@ -30,10 +32,14 @@ class Experiment:
             server_ip = server.networks['provider'][0]
             ssh_client = Experiment._create_ssh_clients(server_ip)
 
+            if server_ip == '10.18.75.174':
+                continue
+
             self.servers.append({
                 "id": server.id,
                 "ssh": ssh_client,
-                "ip": server_ip
+                "ip": server_ip,
+                "name": server.name
             })
 
     def close_all_ssh_client(self):
@@ -47,40 +53,45 @@ class Experiment:
 
         for server in self.servers:
 
-            ret = self._run_command(server, 'git clone https://github.com/bravandi/MLSchedulerAgent.git')
+            ret = self._run_command(server, "sudo cat /etc/hosts")
+            if server["name"] not in str(ret["out"]):
+                self._run_command(
+                    server,
+                    "echo '%s\t%s' | sudo tee --append /etc/hosts" % (server["ip"], server["name"]))
+
+            ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
 
             if ret["retval"] == 128:
 
-                self._run_command(server, "git -C ~/MLSchedulerAgent/ pull")
+                self._run_command(server, "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
 
-            self._run_command(server, "echo '%s' > ~/tenantid" % server["id"])
+            self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
 
-            self._run_command(server, "source ~/MLSchedulerAgent/other/fio_install.sh")
+    def _run_command(self, server, command):
 
-            self._run_command(server, "source ~/MLSchedulerAgent/other/custom_commands.sh")
-
-            self._run_command(server, "c_killPerformanceEvaluation")
-
-            self._run_command(server, "c_killWorkloadGenerator", show_full_output=True)
-
-            self._run_command(server, "")
-
-            return
-
-    def _run_command(self, server, command, show_full_output=False):
-
-        print ("{RUNNING %s} %s\n" % (server["ip"], command))
+        if self.print_output:
+            print ("{EXECUTE %s} %s\n" % (server["ip"], command))
 
         ret = server["ssh"].execute(command)
 
-        stderr = ""
-        if self.print_stderr or show_full_output:
-            stderr = "ERR: %s" % ret["err"]
+        if (not self.print_output) and self.print_output_if_have_error and ret["retval"] > 0:
+            print ("{EXECUTED %s} %s\n" % (server["ip"], command))
+            print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s   ERR:%s \n" %
+                   (server["ip"], ret["out"], ret["retval"], ret["err"]))
 
-        print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s %s \n" %
-               (server["ip"], ret["out"], ret["retval"], stderr))
+        if self.print_output:
+            print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s   ERR:%s \n" %
+                   (server["ip"], ret["out"], ret["retval"], ret["err"]))
 
         return ret
+
+    def start_workload_generators(self):
+
+        pass
+
+    def start_performance_evaluators(self):
+
+        pass
 
     @staticmethod
     def _create_ssh_clients(server_ip):
@@ -106,14 +117,22 @@ class Experiment:
 if __name__ == '__main__':
 
     add_new_experiment = False
-    if "new-exp" in sys.argv:
+    if "new" in sys.argv:
         add_new_experiment = True
 
     e = Experiment(
-        add_new_experiment=add_new_experiment
+        add_new_experiment=add_new_experiment,
+        print_output_if_have_error=True,
+        print_output=False
     )
 
     e.initialize_commands()
+
+    if "workload" in sys.argv:
+        e.start_workload_generators()
+
+    if "performance" in sys.argv:
+        e.start_performance_evaluators()
 
     e.close_all_ssh_client()
 
