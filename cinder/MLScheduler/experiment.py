@@ -39,6 +39,9 @@ class Experiment:
             try:
                 server_ip = server.networks['provider'][0]
 
+                if server_ip == '10.18.75.176':
+                    continue
+
                 tools.log("Connecting via ssh to %s" % (server_ip))
 
                 ssh_client = Experiment._create_ssh_clients(server_ip)
@@ -64,9 +67,6 @@ class Experiment:
 
         for server in self.servers:
 
-            if server["ip"] == '10.18.75.174':
-                continue
-
             ret = self._run_command(server, "sudo cat /etc/hosts")
             if server["name"] not in str(ret["out"]):
                 self._run_command(
@@ -80,6 +80,8 @@ class Experiment:
                 self._run_command(server, "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
 
             self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
+
+            self._run_command(server, "sudo echo '%s@%s' > ~/tenant_description" % (server["name"], server["ip"]))
 
             # self._run_command(server, "sudo rm -d -r ~/*fio*")
 
@@ -103,25 +105,10 @@ class Experiment:
 
         return ret
 
-    def start_workload_generators(self):
-        arguments = [
-            "--fio_test_name", "workload_generator.fio",
-            '--delay_between_workload_generation', "0.5",
-            "--max_number_volumes", "3",
-            "--volume_life_seconds", "360"
-                    ]
-
+    def start_workload_generators(self, arguments):
         self._run_command_on_all_servers("sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (" ".join(arguments)))
 
-    def start_performance_evaluators(self):
-        arguments = [
-            "--fio_test_name", "resource_evaluation.fio",
-            "--terminate_if_takes", "150",
-            "--restart_gap", "20",
-            "--restart_gap_after_terminate", "50",
-            "--show_fio_output", "False",
-        ]
-
+    def start_performance_evaluators(self, arguments):
         self._run_command_on_all_servers(
             "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (" ".join(arguments)))
 
@@ -184,6 +171,10 @@ Manage experiments.
                         required=False,
                         help='Command that needs to be executed.')
 
+    parser.add_argument("--max_number_volumes", default=1, metavar='', type=int,
+                        required=False,
+                        help='max number of volumes each worklaod generator creates')
+
     args = parser.parse_args()
 
     if "shutdown" in args.commands:
@@ -206,10 +197,25 @@ Manage experiments.
         e.initialize_commands()
 
     if "workload" in args.commands:
-        e.start_workload_generators()
+        e.start_workload_generators(
+            [
+                "--fio_test_name", "workload_generator.fio",
+                '--delay_between_workload_generation', "0.5",
+                "--max_number_volumes", str(args.max_number_volumes),
+                "--volume_life_seconds", "360"
+            ]
+        )
 
     if "performance" in args.commands:
-        e.start_performance_evaluators()
+        e.start_performance_evaluators(
+            [
+                "--fio_test_name", "resource_evaluation.fio",
+                "--terminate_if_takes", "150",
+                "--restart_gap", "20",
+                "--restart_gap_after_terminate", "50",
+                "--show_fio_output", "False",
+            ]
+        )
 
     if "kill-performance" in args.commands:
         e.kill_performance_evaluators()

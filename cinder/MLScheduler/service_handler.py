@@ -226,6 +226,7 @@ class Handler(BaseHTTPRequestHandler):
 
             return database.insert_tenant(
                 experiment_id=long(parameters["experiment_id"].value),
+                description=parameters["description"].value,
                 nova_id=parameters["nova_id"].value,
                 create_time=parameters["create_time"].value
             )

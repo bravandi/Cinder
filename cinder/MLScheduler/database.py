@@ -162,12 +162,14 @@ def delete_volume(
 def insert_tenant(
 	experiment_id, #			VARCHAR(36),
     nova_id, #		VARCHAR(36),
+    description, # mediumtext,
 	create_time #	DATETIME
     ):
 
     args = (
         experiment_id,  # VARCHAR(36),
         nova_id,  # VARCHAR(36),
+        description,
         create_time  # DATETIME
     )
 
