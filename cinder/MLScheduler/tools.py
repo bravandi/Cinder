@@ -63,8 +63,13 @@ class SshClient:
             feed_password = self.password is not None and len(self.password) > 0
 
         stdin, stdout, stderr = self.client.exec_command(command)
+
         if feed_password:
             stdin.write(self.password + "\n")
+            stdin.flush()
+
+        if "apt-get" in command:
+            stdin.write("Y\n")
             stdin.flush()
 
         return {'out': stdout.readlines(),
