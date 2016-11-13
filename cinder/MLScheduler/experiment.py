@@ -67,6 +67,13 @@ class Experiment:
 
         for server in self.servers:
 
+            ret = self._run_command(server, "ls ~")
+
+            if "fio-2.0.9\n" not in ret["out"]:
+                self._run_command(server, "sudo wget https://github.com/Crowd9/Benchmark/raw/master/fio-2.0.9.tar.gz")
+                self._run_command(server, "sudo tar xf ~/fio-2.0.9.tar.gz")
+                self._run_command(server, "sudo make -C ~/fio-2.0.9")
+
             ret = self._run_command(server, "sudo cat /etc/hosts")
             if server["name"] not in str(ret["out"]):
                 self._run_command(
@@ -74,7 +81,7 @@ class Experiment:
                     "echo '%s\t%s' | sudo tee --append /etc/hosts" % (server["ip"], server["name"]))
 
 
-            ret = self._run_command(server, "sudo rm -r -d ~/MLSchedulerAgent/")
+            self._run_command(server, "sudo rm -r -d ~/MLSchedulerAgent/")
             ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
             if ret["retval"] == 128:
                 self._run_command(server, "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
@@ -82,10 +89,6 @@ class Experiment:
             self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
 
             self._run_command(server, "sudo echo '%s@%s' > ~/tenant_description" % (server["name"], server["ip"]))
-
-            # self._run_command(server, "sudo rm -d -r ~/*fio*")
-
-            # self._run_command(server, "sudo apt-get install fio")
 
     def _run_command(self, server, command):
 
@@ -200,9 +203,9 @@ Manage experiments.
         e.start_workload_generators(
             [
                 "--fio_test_name", "workload_generator.fio",
-                '--delay_between_workload_generation', "0.5",
+                '--delay_between_workload_generation', "4",
                 "--max_number_volumes", str(args.max_number_volumes),
-                "--volume_life_seconds", "360"
+                "--volume_life_seconds", "500"
             ]
         )
 
