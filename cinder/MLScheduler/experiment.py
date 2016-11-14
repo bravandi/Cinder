@@ -9,7 +9,7 @@ class Experiment:
 
     experiment = None
 
-    def __init__(self, add_new_experiment, print_output_if_have_error=False, print_output=False):
+    def __init__(self, add_new_experiment, config='', print_output_if_have_error=False, print_output=False):
 
         self.print_output_if_have_error = print_output_if_have_error
         self.print_output = print_output
@@ -21,7 +21,7 @@ class Experiment:
                 workload_id=1,
                 comment='',
                 scheduler_algorithm='',
-                config=''
+                config=config
             )
 
             tools.log("Create new experiment.")
@@ -39,7 +39,7 @@ class Experiment:
             try:
                 server_ip = server.networks['provider'][0]
 
-                if server_ip == '10.18.75.176':
+                if server_ip == '10.18.75.182':
                     continue
 
                 tools.log("Connecting via ssh to %s" % (server_ip))
@@ -52,6 +52,7 @@ class Experiment:
                     "ip": server_ip,
                     "name": server.name
                 })
+
             except Exception as ex:
                 tools.log("Error -> canot create SSH client for %s\nError message -> %s"
                           % (server_ip, ex.message))
@@ -89,6 +90,8 @@ class Experiment:
             self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
 
             self._run_command(server, "sudo echo '%s@%s' > ~/tenant_description" % (server["name"], server["ip"]))
+
+            self._run_command(server, "sudo mkdir /media/")
 
     def _run_command(self, server, command):
 
@@ -159,7 +162,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Manage experiments.')
 
     parser.add_argument('commands', type=str, nargs="+",
-                        choices=['start', 'shutdown', 'start-new', 'workload', 'performance', 'det-del', 'kill-workload', 'kill-performance', 'execute', 'init'],
+                        choices=['start', 'shutdown', 'start-new', 'workload', 'performance', 'det-del', 'kill-workload', 'kill-performance', 'execute', 'init', 'create-experiment'],
                         help=
 """
 Manage experiments.
@@ -190,35 +193,43 @@ Manage experiments.
         args.commands = ["init", "workload", "performance"]
         args.new = True
 
+    if "create-experiment" in args.commands:
+        args.new = True
+
+    workload_args = [
+        "--fio_test_name", "workload_generator.fio",
+        '--delay_between_workload_generation', "4",
+        "--max_number_volumes", str(args.max_number_volumes),
+        "--volume_life_seconds", "500",
+        "--volume_size", "5"
+    ]
+
+    performance_args = [
+        "--fio_test_name", "resource_evaluation.fio",
+        "--terminate_if_takes", "150",
+        "--restart_gap", "20",
+        "--restart_gap_after_terminate", "50",
+        "--show_fio_output", "False",
+    ]
+
     e = Experiment(
         add_new_experiment=args.new,
         print_output_if_have_error=True,
-        print_output=True
+        print_output=True,
+        config=str({
+            "workload_args": workload_args,
+            "performance_args": performance_args
+        })
     )
 
     if "init" in args.commands:
         e.initialize_commands()
 
     if "workload" in args.commands:
-        e.start_workload_generators(
-            [
-                "--fio_test_name", "workload_generator.fio",
-                '--delay_between_workload_generation', "4",
-                "--max_number_volumes", str(args.max_number_volumes),
-                "--volume_life_seconds", "500"
-            ]
-        )
+        e.start_workload_generators(workload_args)
 
     if "performance" in args.commands:
-        e.start_performance_evaluators(
-            [
-                "--fio_test_name", "resource_evaluation.fio",
-                "--terminate_if_takes", "150",
-                "--restart_gap", "20",
-                "--restart_gap_after_terminate", "50",
-                "--show_fio_output", "False",
-            ]
-        )
+        e.start_performance_evaluators(performance_args)
 
     if "kill-performance" in args.commands:
         e.kill_performance_evaluators()

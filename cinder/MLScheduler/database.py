@@ -37,13 +37,7 @@ def __execute_delete_procedure(name, args):
 
         conn.commit()
 
-        # print out the result
-        # for result in cursor.stored_results():
-        #     print(result.fetchall())
-
         tools.log("DELETE Called: %s args-output: %s" % (name, args), debug=True)
-
-        # return inser_id
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
@@ -113,10 +107,6 @@ def __execute_insert_procedure(name, args):
 
         conn.commit()
 
-        # print out the result
-        # for result in cursor.stored_results():
-        #     print(result.fetchall())
-
         output = list(output)
         insert_id = output[len(output) - 1]
 
@@ -127,14 +117,6 @@ def __execute_insert_procedure(name, args):
     except MySQLdb.Error as err:
 
         print (err)
-
-    # except mysql.connector.Error as err:
-    #     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-    #         print("Something is wrong with your user name or password")
-    #     elif err.errno == errorcode.ER_BAD_DB_ERROR:
-    #         print("Database does not exist")
-    #     else:
-    #         print(err)
 
     finally:
 
