@@ -172,18 +172,15 @@ class Handler(BaseHTTPRequestHandler):
 
             scheduler_algorithm = ""
             if parameters.has_key("scheduler_algorithm"):
-                comment = parameters["scheduler_algorithm"].value
+                scheduler_algorithm = parameters["scheduler_algorithm"].value
 
             config = ""
             if parameters.has_key("config"):
-                comment = parameters["config"].value
+                config = parameters["config"].value
 
             workload_comment = ""
             if parameters.has_key("workload_comment"):
-                comment = parameters["workload_comment"].value
-
-            # import pdb
-            # pdb.set_trace()
+                workload_comment = parameters["workload_comment"].value
 
             return database.insert_experiment(
                 workload_id=long(parameters["workload_id"].value),

@@ -3,6 +3,7 @@ import tools
 import os
 import communication
 import time
+import json
 import pdb
 
 class Experiment:
@@ -112,11 +113,23 @@ class Experiment:
         return ret
 
     def start_workload_generators(self, arguments):
-        self._run_command_on_all_servers("sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (" ".join(arguments)))
+
+        args = []
+        for k, v in arguments.iteritems():
+            args.append(str(k))
+            args.append(str(v))
+
+        self._run_command_on_all_servers("sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (" ".join(args)))
 
     def start_performance_evaluators(self, arguments):
+
+        args = []
+        for k, v in arguments.iteritems():
+            args.append(str(k))
+            args.append(str(v))
+
         self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (" ".join(arguments)))
+            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (" ".join(args)))
 
 
     def kill_performance_evaluators(self):
@@ -196,29 +209,30 @@ Manage experiments.
     if "create-experiment" in args.commands:
         args.new = True
 
-    workload_args = [
-        "--fio_test_name", "workload_generator.fio",
-        '--delay_between_workload_generation', "4",
-        "--max_number_volumes", str(args.max_number_volumes),
-        "--volume_life_seconds", "500",
-        "--volume_size", "5"
-    ]
+    workload_args = {
+        "--fio_test_name": "workload_generator.fio",
+        '--delay_between_workload_generation': 4,
+        "--max_number_volumes": args.max_number_volumes,
+        "--volume_life_seconds": 500,
+        "--volume_size": 5
+    }
 
-    performance_args = [
-        "--fio_test_name", "resource_evaluation.fio",
-        "--terminate_if_takes", "150",
-        "--restart_gap", "20",
-        "--restart_gap_after_terminate", "50",
-        "--show_fio_output", "False",
-    ]
+    performance_args = {
+        "--fio_test_name": "resource_evaluation.fio",
+        "--terminate_if_takes": 150,
+        "--restart_gap": 20,
+        "--restart_gap_after_terminate": 50,
+        "--show_fio_output": False,
+    }
 
     e = Experiment(
         add_new_experiment=args.new,
         print_output_if_have_error=True,
         print_output=True,
-        config=str({
+        config=json.dumps({
             "workload_args": workload_args,
-            "performance_args": performance_args
+            "performance_args": performance_args,
+            "clock_calc": "t.second % 15"
         })
     )
 
