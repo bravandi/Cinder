@@ -232,7 +232,17 @@ Manage experiments.
         config=json.dumps({
             "workload_args": workload_args,
             "performance_args": performance_args,
-            "clock_calc": "t.second % 15"
+            "mod_normalized_clock_for_feature_generation": 180,
+            "clock_calc":
+"""
+def clock_calc(t):
+    if(t.second > 30):
+        t = t.replace(second=30)
+    else:
+        t = t.replace(second=0)
+    t = t.replace(microsecond=0)
+    return t.strftime("%s")
+"""
         })
     )
 
