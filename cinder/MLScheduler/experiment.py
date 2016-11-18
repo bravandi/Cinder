@@ -214,7 +214,7 @@ Manage experiments.
         '--delay_between_workload_generation': 4,
         "--max_number_volumes": args.max_number_volumes,
         "--volume_life_seconds": 500,
-        "--volume_size": 5
+        "--volume_size": 9
     }
 
     performance_args = {

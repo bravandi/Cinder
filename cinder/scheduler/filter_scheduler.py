@@ -92,10 +92,10 @@ class FilterScheduler(driver.Scheduler):
         experiment_id_schedule_response_id[1] = int(experiment_id_schedule_response_id[1])
 
         if not weighed_host:
-            schedule_response_id = mlscheduler_communication.insert_schedule_response(
+            mlscheduler_communication.insert_schedule_response(
                 experiment_id=experiment_id_schedule_response_id[0],
                 volume_request_id=experiment_id_schedule_response_id[1],
-                response_id=mlscheduler_communication.ScheduleResponseType.rejected())
+                response_id=mlscheduler_communication.ScheduleResponseType.rejected_no_weighed_host())
 
             raise exception.NoValidHost(reason=_("No weighed hosts available"))
 

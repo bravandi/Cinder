@@ -4,22 +4,35 @@ import json
 
 __server_url = 'http://CinderDevelopmentEnv:8888/'
 
-
+"""
+1	Accepted
+2	rejected capacity
+3	rejected read iops
+4	rejected write iops
+5	rejected read & write iops
+6	rejected unknown reason
+"""
 class ScheduleResponseType:
     @staticmethod
     def accepted(): return 1
 
     @staticmethod
-    def rejected(): return 2
+    def rejected_capacity(): return 2
 
     @staticmethod
-    def rejected_capacity(): return 3
+    def rejected_read_iops(): return 3
 
     @staticmethod
-    def rejected_iops(): return 4
+    def rejected_write_iops(): return 4
 
     @staticmethod
-    def rejected_capacity_iops(): return 5
+    def rejected_read_write_iops(): return 5
+
+    @staticmethod
+    def rejected_unknown(): return 6
+
+    @staticmethod
+    def rejected_no_weighed_host(): return 7
 
 
 def insert_volume(
@@ -114,24 +127,5 @@ def get_current_experiment():
 
 
 if __name__ == "__main__":
-    # print add_volume(
-    #     experiment_id=1,
-    #     cinder_id=uuid.uuid1(),
-    #     backend_cinder_id='block4@lvm#LVM',
-    #     schedule_response=1,
-    #     capacity=1)
-
-    # print insert_schedule_response(
-    #     experiment_id=1,
-    #     volume_request_id=1,
-    #     response_id=1
-    # )
-
-    print insert_experiment(
-        workload_id=1,
-        comment='',
-        scheduler_algorithm='',
-        config=''
-    )
 
     pass
