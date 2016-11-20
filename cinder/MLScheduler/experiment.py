@@ -19,7 +19,6 @@ class Experiment:
         if add_new_experiment:
 
             communication.insert_experiment(
-                workload_id=1,
                 comment='',
                 scheduler_algorithm='',
                 config=config
@@ -225,6 +224,7 @@ Manage experiments.
         "--show_fio_output": False,
     }
 
+
     e = Experiment(
         add_new_experiment=args.new,
         print_output_if_have_error=True,
@@ -233,9 +233,15 @@ Manage experiments.
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": 180,
-            "clock_calc":
+            "training_dataset_size": 100,
+            "volume_clock_calc":
 """
-def clock_calc(t):
+def volume_clock_calc(t):
+    return t.strftime("%s")
+""",
+            "volume_performance_meter_clock_calc":
+"""
+def volume_performance_meter_clock_calc(t):
     if(t.second > 30):
         t = t.replace(second=30)
     else:

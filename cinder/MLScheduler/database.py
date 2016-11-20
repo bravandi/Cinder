@@ -3,8 +3,10 @@ from datetime import datetime
 from mysql.connector import errorcode
 import MySQLdb
 import MySQLdb.cursors
+import MySQLdb.converters
 import pdb
 import tools
+# from decimal import Decimal
 # from mysql.connector import MySQLConnection, Error
 
 
@@ -23,7 +25,11 @@ def __create_connection_for_insert_delete():
 
 def __create_connection_for_get():
 
-    return MySQLdb.connect(user='babak', passwd='123', host='10.18.75.100', db='MLScheduler')
+    conv = MySQLdb.converters.conversions.copy()
+    conv[246] = float  # convert decimals to floats
+    conv[10] = str  # convert dates to strings
+
+    return MySQLdb.connect(user='babak', passwd='123', host='10.18.75.100', db='MLScheduler', conv=conv)
 
 
 def __execute_delete_procedure(name, args):
@@ -53,32 +59,82 @@ def __execute_delete_procedure(name, args):
         conn.close()
 
 
-def execute_get_procedure(name, args=()):
+def execute_get_procedure_dictionary(name, args=()):
 
     try:
         conn = __create_connection_for_get()
 
         cursor = conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
 
-        cursor.callproc(name, args)
+        extcur = cursor.callproc(name, args)
 
-        result = cursor.fetchall()
+        result_sets = []
 
-        tools.log("GET Called: %s ARGS: %s OUTPUT: %s" % (name, args, result), debug=True)
+        while True:
+            result_set = cursor.fetchall()
 
-        return result
+            if result_set != ():
+                result_sets.append(result_set)
+
+            if cursor.nextset() is None:
+                break
+
+        tools.log("GET Called: %s ARGS: %s OUTPUT: %s" % (name, args, result_sets), debug=True)
+
+        if len(result_sets) == 1:
+            result_sets = result_sets[0]
+
+        return result_sets
 
     except MySQLdb.Error as err:
 
         print (err)
 
-    # except mysql.connector.Error as err:
-    #     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-    #         print("Something is wrong with your user name or password")
-    #     elif err.errno == errorcode.ER_BAD_DB_ERROR:
-    #         print("Database does not exist")
-    #     else:
-    #         print(err)
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+def execute_get_procedure_tuple(name, args=()):
+
+    try:
+        conn = __create_connection_for_get()
+
+        cursor = conn.cursor(cursorclass=MySQLdb.cursors.Cursor)
+
+        extcur = cursor.callproc(name, args)
+
+        result_sets = []
+
+        while True:
+            if cursor.description is None:
+                break
+
+            result_set = ()
+
+            field_names = tuple([i[0] for i in cursor.description])
+
+            result_set = result_set + (field_names, )
+
+            fall = cursor.fetchall()
+
+            result_set = result_set + fall
+
+            result_sets.append(result_set)
+
+            cursor.nextset()
+
+        tools.log("GET Called: %s ARGS: %s OUTPUT Result Sets Length: %s" % (name, args, len(result_sets)), debug=True)
+
+        if len(result_sets) == 1:
+            result_sets = result_sets[0]
+
+        return result_sets
+
+    except MySQLdb.Error as err:
+
+        print (err)
 
     finally:
 
@@ -115,8 +171,7 @@ def __execute_insert_procedure(name, args):
         return insert_id
 
     except MySQLdb.Error as err:
-
-        print (err)
+        tools.log("ARGHS -->%s\nERR-->%s" + (str(args), str(err)))
 
     finally:
 
@@ -176,6 +231,7 @@ def insert_schedule_response(
 
     return __execute_insert_procedure("insert_schedule_response", args)
 
+
 def insert_volume(
     experiment_id,  #            bigint
     cinder_id,  #                VARCHAR(36)
@@ -185,9 +241,10 @@ def insert_volume(
     create_clock,  # INT(11),
 	create_time #	DATETIME
 ):
-    sharp_index = backend_cinder_id.index("#")
-    if sharp_index > 0:
-        backend_cinder_id = backend_cinder_id[0:sharp_index]
+
+    # sharp_index = backend_cinder_id.index("#")
+    # if sharp_index > 0:
+    #     backend_cinder_id = backend_cinder_id[0:sharp_index]
 
     args = (
         experiment_id,
@@ -200,6 +257,7 @@ def insert_volume(
     )
 
     return __execute_insert_procedure("insert_volume", args)
+
 
 def insert_volume_performance_meter(
         experiment_id,
@@ -310,6 +368,7 @@ def insert_volume_request(
 
     return __execute_insert_procedure("insert_volume_request", args)
 
+
 def insert_workload(
     comment, #		MEDIUMTEXT,
     generate_method, #			INT(11),
@@ -322,6 +381,7 @@ def insert_workload(
     )
 
     return __execute_insert_procedure("insert_workload", args)
+
 
 if __name__ == '__main__':
 

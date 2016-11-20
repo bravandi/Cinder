@@ -38,3 +38,4 @@ api-ref/build
 releasenotes/build
 cinder/MLScheduler/tmp/request_spec.json
 cinder/MLScheduler/tmp.json
+*.pdf

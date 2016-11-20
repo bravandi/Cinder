@@ -36,7 +36,7 @@ class Handler(BaseHTTPRequestHandler):
 
         result = self._handle_request(parsed_path.path, urlparse.parse_qs(parsed_path.query))
 
-        # todo convert any datetime variable to string otherwise wont serialzie
+        # todo convert any datetime variable to string otherwise wont serialize
         self.wfile.write(json.dumps(result))
 
         return
@@ -92,9 +92,20 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/get_current_experiment":
 
-            experimet = database.execute_get_procedure("get_current_experiment")[0]
+            experimet = database.execute_get_procedure_dictionary("get_current_experiment")[0]
 
             return experimet
+
+        if path == "/get_training_dataset":
+
+            training_dataset = database.execute_get_procedure_tuple(
+                "get_training_dataset",
+                args=(
+                    long(parameters["experiment_id"][0]),
+                    long(parameters["training_dataset_size"][0])
+                ))
+
+            return training_dataset
 
         if path == "/delete_volume":
             return database.delete_volume(
