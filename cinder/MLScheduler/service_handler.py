@@ -7,6 +7,8 @@ import pdb
 import json
 import database
 import classification
+import communication
+
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -69,20 +71,20 @@ class Handler(BaseHTTPRequestHandler):
         # Echo back information about what was posted in the form
         # for field in form.keys():
 
-            # field_item = form[field]
+        # field_item = form[field]
 
-            # print ("\nLOOOOOOOOOOOOG %s --> value: %s type: %s \n %s" % (field, field_item.value, field_item.type, dir(field_item)))
+        # print ("\nLOOOOOOOOOOOOG %s --> value: %s type: %s \n %s" % (field, field_item.value, field_item.type, dir(field_item)))
 
-            # if field_item.filename:
-            #     # The field contains an uploaded file
-            #     file_data = field_item.file.read()
-            #     file_len = len(file_data)
-            #     del file_data
-            #     self.wfile.write('\tUploaded %s as "%s" (%d bytes)\n' % \
-            #                      (field, field_item.filename, file_len))
-            # else:
-            #     # Regular form value
-            #     self.wfile.write('\t%s=%s\n' % (field, form[field].value))
+        # if field_item.filename:
+        #     # The field contains an uploaded file
+        #     file_data = field_item.file.read()
+        #     file_len = len(file_data)
+        #     del file_data
+        #     self.wfile.write('\tUploaded %s as "%s" (%d bytes)\n' % \
+        #                      (field, field_item.filename, file_len))
+        # else:
+        #     # Regular form value
+        #     self.wfile.write('\t%s=%s\n' % (field, form[field].value))
 
 
         return
@@ -92,8 +94,12 @@ class Handler(BaseHTTPRequestHandler):
         # tools.log("_handle_request: %s" % (path), debug=True)
 
         if path == "/get_prediction":
+            pdb.set_trace()
 
-            classifier = classification.Classification.get_current_reload(training_dataset_size=300)
+            classifier = classification.Classification.get_current_reload(
+                training_dataset_size=communication.Communication.get_current_experiment()["config"]["training_dataset_size"],
+                violation_iops_classes=["v1", "v2", "v3", "v4"])
+
             prediction = classifier.predict(
                 volume_request_id=long(parameters["volume_request_id"][0])
             )
@@ -101,11 +107,14 @@ class Handler(BaseHTTPRequestHandler):
             return prediction
 
         if path == "/get_current_experiment":
+            result = database.execute_get_procedure_dictionary("get_current_experiment")
 
-            return database.execute_get_procedure_dictionary("get_current_experiment")[0]
+            if len(result) == 1:
+                return result[0]
+
+            return None
 
         if path == "/get_training_dataset":
-
             training_dataset = database.execute_get_procedure_tuple(
                 "get_training_dataset",
                 args=(
@@ -144,7 +153,6 @@ class Handler(BaseHTTPRequestHandler):
             )
 
         if path == "/insert_volume":
-
             return database.insert_volume(
                 experiment_id=long(parameters["experiment_id"].value),
                 cinder_id=parameters["cinder_id"].value,
@@ -171,7 +179,7 @@ class Handler(BaseHTTPRequestHandler):
 
             io_test_output = None
             if parameters.has_key("io_test_output"):
-                io_test_output=parameters["io_test_output"].value
+                io_test_output = parameters["io_test_output"].value
 
             nova_id = None
             if parameters.has_key("nova_id"):
@@ -250,7 +258,6 @@ class Handler(BaseHTTPRequestHandler):
             )
 
         if path == "/insert_tenant":
-
             return database.insert_tenant(
                 experiment_id=long(parameters["experiment_id"].value),
                 description=parameters["description"].value,
@@ -261,6 +268,7 @@ class Handler(BaseHTTPRequestHandler):
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
+
 
 if __name__ == '__main__':
     server = ThreadedHTTPServer(('10.18.75.100', 8888), Handler)

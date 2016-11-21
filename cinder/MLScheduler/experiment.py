@@ -4,6 +4,7 @@ import os
 import communication
 import time
 import json
+import sys
 import pdb
 
 class Experiment:
@@ -28,7 +29,8 @@ class Experiment:
 
         Experiment.experiment = communication.Communication.get_current_experiment()
 
-        tools.log("Experiment id: %s" % str(Experiment.experiment["id"]))
+        if Experiment.experiment is not None:
+            tools.log("Experiment id: %s" % str(Experiment.experiment["id"]))
 
         nova = tools.get_nova_client()
         for server in nova.servers.list():
@@ -170,11 +172,16 @@ class Experiment:
 if __name__ == '__main__':
 
     # todo ******* run python experiment.py execute --command "sudo mkdir /media" on the other servers that you shut down
+    # todo when create new server make sure dependecies such as numpy are installed -->python experiment.py execute --command "pip install numpy"
+
 
     parser = argparse.ArgumentParser(description='Manage experiments.')
 
     parser.add_argument('commands', type=str, nargs="+",
-                        choices=['start', 'shutdown', 'start-new', 'workload', 'performance', 'det-del', 'kill-workload', 'kill-performance', 'execute', 'init', 'create-experiment'],
+                        choices=[
+                            'start', 'shutdown', 'start-new', 'workload', 'del-avail-err',
+                            'performance', 'det-del', 'kill-workload',
+                            'kill-performance', 'execute', 'init', 'create-experiment'],
                         help=
 """
 Manage experiments.
@@ -189,7 +196,7 @@ Manage experiments.
                         required=False,
                         help='Command that needs to be executed.')
 
-    parser.add_argument("--max_number_volumes", default=1, metavar='', type=int,
+    parser.add_argument("--max_number_volumes", default=6, metavar='', type=int,
                         required=False,
                         help='max number of volumes each worklaod generator creates')
 
@@ -210,7 +217,7 @@ Manage experiments.
 
     workload_args = {
         "--fio_test_name": "workload_generator.fio",
-        '--delay_between_workload_generation': 4,
+        '--delay_between_workload_generation': 8,
         "--max_number_volumes": args.max_number_volumes,
         "--volume_life_seconds": 500,
         "--volume_size": 9
@@ -218,12 +225,16 @@ Manage experiments.
 
     performance_args = {
         "--fio_test_name": "resource_evaluation.fio",
-        "--terminate_if_takes": 150,
-        "--restart_gap": 20,
+        "--terminate_if_takes": 175,
+        "--restart_gap": 25,
         "--restart_gap_after_terminate": 50,
         "--show_fio_output": False,
     }
 
+    if "del-avail-err" in args.commands:
+        tools.delete_volumes_available_error()
+
+        sys.exit()
 
     e = Experiment(
         add_new_experiment=args.new,
@@ -233,7 +244,7 @@ Manage experiments.
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": 180,
-            "training_dataset_size": 100,
+            "training_dataset_size": 500,
             "volume_clock_calc":
 """
 def volume_clock_calc(t):
@@ -273,6 +284,7 @@ def volume_performance_meter_clock_calc(t):
 
     if "det-del" in args.commands:
         e.detach_delete_all_servers_volumes()
+        # tools.delete_volumes_available_error()
 
     if "execute" in args.commands:
         e._run_command_on_all_servers(args.command)

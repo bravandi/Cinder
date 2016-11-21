@@ -1,6 +1,6 @@
 import paramiko
 from StringIO import StringIO
-
+import pdb
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from novaclient import client as n_client
@@ -23,6 +23,7 @@ def get_session():
 
     return sess
 
+
 # todo design a proper error management when calling openstack services using client API ies
 def get_cinder_client():
 
@@ -33,6 +34,14 @@ def get_nova_client():
 
     return n_client.Client(2, session=get_session())
 
+
+def delete_volumes_available_error():
+    cinder = get_cinder_client()
+
+    for volume in cinder.volumes.list():
+        if volume.status == 'available' or volume.status == 'error':
+
+            cinder.volumes.delete(volume.id)
 
 class SshClient:
     "A wrapper of paramiko.SSHClient"
@@ -68,7 +77,7 @@ class SshClient:
             stdin.write(self.password + "\n")
             stdin.flush()
 
-        if "apt-get" in command:
+        if "apt-get" in command or "pip" in command:
             stdin.write("Y\n")
             stdin.flush()
 

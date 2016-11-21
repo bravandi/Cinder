@@ -150,22 +150,17 @@ class BaseWeightHandler(base_handler.BaseHandler):
 
         experiment_id_volume_request_id = weighing_properties['request_spec']['volume_properties']['display_name'].split(',')
 
-        weighed_objs = []
-
-        prediction = communication.get_prediction(
+        predictions = communication.get_prediction(
             volume_request_id=int(experiment_id_volume_request_id[1])
         )
-        #prediction["block1@lvm#LVM"]['read_violation']["class"]
-        #prediction["block1@lvm#LVM"]['read_violation']["prob"]
-        #prediction["block1@lvm#LVM"]['write_violation']["prob"]
 
-        import pdb
-        pdb.set_trace()
+        final_result = []
+        for wo in weighed_objs:
+            for prediction in predictions:
+                if wo.to_dict()['host'] == prediction:
+                    final_result.append(wo)
 
+        # import pdb
+        # pdb.set_trace()
 
-        # for backend in weighed_obj_list[0].to_dict():
-        #     # weighed_obj_list[0].to_dict()['host'] --> u'block5@lvm#LVM'
-        #
-        #     pass
-
-        return sorted(weighed_objs, key=lambda x: x.weight, reverse=True)
+        return sorted(final_result, key=lambda x: x.weight, reverse=True)

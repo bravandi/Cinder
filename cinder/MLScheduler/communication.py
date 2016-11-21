@@ -1,3 +1,4 @@
+import os
 import requests
 import urllib
 from datetime import datetime
@@ -41,24 +42,27 @@ class ScheduleResponseType:
 
 
 class Communication:
-
     _current_experiment = None
     __server_url = 'http://10.18.75.100:8888/'
 
     @staticmethod
     def get_current_experiment():
         if Communication._current_experiment is not None:
-
             return Communication._current_experiment
 
         ex = requests.get(Communication.__server_url + "get_current_experiment")
 
-        ex = json.loads(ex.text)
-        ex["config"] = json.loads(ex["config"])
+        try:
+            ex = json.loads(ex.text)
+
+            ex["config"] = json.loads(ex["config"])
+        except Exception as err:
+            return None
 
         Communication._current_experiment = ex
 
         return Communication._current_experiment
+
 
 def insert_volume(
         experiment_id,
@@ -68,7 +72,6 @@ def insert_volume(
         capacity,
         create_clock=0,
         create_time=None):
-
     if create_time is None:
         create_time = datetime.now()
 
@@ -146,7 +149,6 @@ def insert_schedule_response(
 def get_training_dataset(
         experiment_id,
         training_dataset_size):
-
     params = {
         "experiment_id": experiment_id,
         "training_dataset_size": training_dataset_size
@@ -158,7 +160,6 @@ def get_training_dataset(
 
 
 def get_backends_weights(experiment_id, volume_request_id):
-
     params = {
         "experiment_id": experiment_id,
         "volume_request_id": volume_request_id
@@ -170,7 +171,6 @@ def get_backends_weights(experiment_id, volume_request_id):
 
 
 def get_prediction(volume_request_id):
-
     params = {
         "volume_request_id": volume_request_id
     }
@@ -183,24 +183,29 @@ def get_prediction(volume_request_id):
 def volume_clock_calc(t):
     return t.strftime("%s")
 
+
 try:
     # define the function from the database
-    exec(Communication.get_current_experiment()["config"]["volume_clock_calc"])
+    exec (Communication.get_current_experiment()["config"]["volume_clock_calc"])
 except Exception as err:
     print("Error an executing the experiment VOLUME calculate clock function. ERR:%s" % str(err))
     # sys.exit(1)
 
 
 def get_volume_performance_meter_clock_calc(t=datetime.now()):
+    if os.name == 'nt':
+        return 50
+
     exec (Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
 
     return volume_performance_meter_clock_calc(t)
 
+
 try:
     # define the function from the database
-    exec(Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
+    exec (Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
 except Exception as err:
-    print("Error an executing the experiment VOLUME_PERFORMANCE_METER calculate clock function. ERR:%s" % str(err))
+    print("Error on executing get_volume_performance_meter_clock_calc to create dynamic function. ERR:%s" % str(err))
     # sys.exit(1)
 
 
@@ -209,7 +214,6 @@ def _parse_response(response):
 
 
 if __name__ == "__main__":
-
     # print get_backends_weights(get_current_experiment()["id"], 2333)
     print get_prediction(
         volume_request_id=2352

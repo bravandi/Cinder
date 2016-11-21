@@ -10,8 +10,10 @@ from sklearn.model_selection import cross_val_score
 class Classification:
     current_classification = None
 
-    def __init__(self, classifier_name, draw_decision_tree=False, run_cross_validation=False):
+    def __init__(self, classifier_name, violation_iops_classes, read_is_priority, draw_decision_tree=False, run_cross_validation=False):
 
+        self.read_is_priority = read_is_priority
+        self.violation_iops_classes = violation_iops_classes
         self.classifier_name = classifier_name
         self.draw_decision_tree = draw_decision_tree
         self.run_cross_validation = run_cross_validation
@@ -20,11 +22,13 @@ class Classification:
         self.create_time = datetime.now()
 
     @staticmethod
-    def get_current_reload(training_dataset_size):
+    def get_current_reload(training_dataset_size, violation_iops_classes):
 
         if Classification.current_classification is None:
             clf = Classification(
-                classifier_name="tree"
+                classifier_name="tree",
+                violation_iops_classes=violation_iops_classes,
+                read_is_priority=True
             )
 
             clf.create_models(
@@ -180,12 +184,11 @@ class Classification:
                     fh.close()
 
     def _include_classes_with_zero_probability(self, classifier, prediction):
-        classes = {
-            "v1": 0.0,
-            "v2": 0.0,
-            "v3": 0.0,
-            "v4": 00.0
-        }
+
+        classes = {}
+
+        for cls in self.violation_iops_classes:
+            classes[cls] = 0.0
 
         classes_from_clf = list(classifier.classes_)
 
@@ -197,7 +200,7 @@ class Classification:
 
     def predict(self, volume_request_id):
 
-        prediction = {}
+        classifier_predictions = {}
         values = {}
 
         weights = communication.get_backends_weights(
@@ -223,29 +226,72 @@ class Classification:
 
             values_array = values[cinder_id]
 
-            prediction[cinder_id] = {
+            classifier_predictions[cinder_id] = {
                 "read_violation": {
-                    "class": read_classifier.predict(values_array)[0],
+                    # "class": read_classifier.predict(values_array)[0],
                     "prob": self._include_classes_with_zero_probability(
                         read_classifier,
                         list(read_classifier.predict_proba(values_array)[0]))
                 },
                 "write_violation": {
-                    "class": write_classifier.predict(values_array)[0],
+                    # "class": write_classifier.predict(values_array)[0],
                     "prob": self._include_classes_with_zero_probability(
                         write_classifier,
                         list(write_classifier.predict_proba(values_array)[0]))
                 }
             }
 
-        return prediction
+        read_candidates = {}
+        write_candidates = {}
+
+        # calculate predictions
+        for cinder_id, predictions in classifier_predictions.iteritems():
+
+            for read_or_write_iops, prediction in predictions.iteritems():
+                prob = np.array(prediction["prob"].values())
+
+                if read_or_write_iops == "read_violation":
+                    w = np.array([4, 3, 2, 1])
+
+                if read_or_write_iops == "write_violation":
+                    w = np.array([4, 3, 2, 1])
+
+                val = prob * w
+                best_index = val.argmax()
+                prediction["recommendation"] = {self.violation_iops_classes[val.argmax()]: prob[best_index]}
+
+                if read_or_write_iops == "read_violation":
+                    read_candidates[cinder_id] = prediction["recommendation"]
+
+                if read_or_write_iops == "write_violation":
+                    write_candidates[cinder_id] = prediction["recommendation"]
+
+        max_value_read = max([value.values()[0] for key, value in read_candidates.iteritems()])
+        read_final_candidates = [key for key, value in read_candidates.iteritems()
+                                 if value.values()[0] == max_value_read]
+
+        max_value_write = max([value.values()[0] for key, value in write_candidates.iteritems()])
+        write_final_candidates = [key for key, value in write_candidates.iteritems()
+                                 if value.values()[0] == max_value_write]
+
+        final_result = np.intersect1d(read_final_candidates, write_final_candidates).tolist()
+
+        if len(final_result) == 0:
+            if self.read_is_priority:
+                final_result = read_final_candidates
+            else:
+                final_result = write_final_candidates
+
+        return final_result
 
 
 _clf = None
 
 if __name__ == "__main__":
     d = Classification(
-        classifier_name="tree"
+        classifier_name="tree",
+        violation_iops_classes=["v1", "v2", "v3", "v4"],
+        read_is_priority=True
     )
 
     d.create_models(
