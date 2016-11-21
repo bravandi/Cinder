@@ -10,7 +10,8 @@ from sklearn.model_selection import cross_val_score
 class Classification:
     current_classification = None
 
-    def __init__(self, classifier_name, violation_iops_classes, read_is_priority, draw_decision_tree=False, run_cross_validation=False):
+    def __init__(self, classifier_name, violation_iops_classes, read_is_priority, draw_decision_tree=False,
+                 run_cross_validation=False):
 
         self.read_is_priority = read_is_priority
         self.violation_iops_classes = violation_iops_classes
@@ -207,6 +208,13 @@ class Classification:
             experiment_id=communication.Communication.get_current_experiment()["id"],
             volume_request_id=volume_request_id)
 
+        if communication.Communication.get_config("is_training") is True:
+            return None
+
+        # there were no records for training or prediction. Probably its a trainng experiment
+        if len(weights) == 1 or len(self.classifiers_for_read_iops) == 0 or len(self.classifiers_for_write_iops) == 0:
+            return None
+
         volume_request = weights[0][0]
         clock = communication.get_volume_performance_meter_clock_calc(datetime.now())
 
@@ -272,7 +280,7 @@ class Classification:
 
         max_value_write = max([value.values()[0] for key, value in write_candidates.iteritems()])
         write_final_candidates = [key for key, value in write_candidates.iteritems()
-                                 if value.values()[0] == max_value_write]
+                                  if value.values()[0] == max_value_write]
 
         final_result = np.intersect1d(read_final_candidates, write_final_candidates).tolist()
 

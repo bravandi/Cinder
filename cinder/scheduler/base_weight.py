@@ -154,13 +154,14 @@ class BaseWeightHandler(base_handler.BaseHandler):
             volume_request_id=int(experiment_id_volume_request_id[1])
         )
 
-        final_result = []
-        for wo in weighed_objs:
-            for prediction in predictions:
-                if wo.to_dict()['host'] == prediction:
-                    final_result.append(wo)
+        if predictions is not None:
 
-        # import pdb
-        # pdb.set_trace()
+            final_result = []
+            for wo in weighed_objs:
+                for prediction in predictions:
+                    if wo.to_dict()['host'] == prediction:
+                        final_result.append(wo)
+        else:
+            final_result=weighed_objs
 
         return sorted(final_result, key=lambda x: x.weight, reverse=True)

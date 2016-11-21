@@ -192,6 +192,9 @@ Manage experiments.
                         required=False,
                         help='Create new experiment otherwise the last created experiment will be used.')
 
+    parser.add_argument('--is_training', default=False, metavar='', type=bool, required=False,
+                        help='training will use the default scheduler.')
+
     parser.add_argument('--command', metavar='', type=str,
                         required=False,
                         help='Command that needs to be executed.')
@@ -241,6 +244,7 @@ Manage experiments.
         print_output_if_have_error=True,
         print_output=True,
         config=json.dumps({
+            "is_training": args.is_training,
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": 180,

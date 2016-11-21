@@ -94,7 +94,6 @@ class Handler(BaseHTTPRequestHandler):
         # tools.log("_handle_request: %s" % (path), debug=True)
 
         if path == "/get_prediction":
-            pdb.set_trace()
 
             classifier = classification.Classification.get_current_reload(
                 training_dataset_size=communication.Communication.get_current_experiment()["config"]["training_dataset_size"],

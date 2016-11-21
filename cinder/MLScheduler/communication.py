@@ -46,6 +46,11 @@ class Communication:
     __server_url = 'http://10.18.75.100:8888/'
 
     @staticmethod
+    def get_config(key):
+
+        return Communication.get_current_experiment()["config"][key]
+
+    @staticmethod
     def get_current_experiment():
         if Communication._current_experiment is not None:
             return Communication._current_experiment
