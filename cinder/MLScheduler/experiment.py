@@ -26,7 +26,7 @@ class Experiment:
 
             tools.log("Create new experiment.")
 
-        Experiment.experiment = communication.get_current_experiment()
+        Experiment.experiment = communication.Communication.get_current_experiment()
 
         tools.log("Experiment id: %s" % str(Experiment.experiment["id"]))
 

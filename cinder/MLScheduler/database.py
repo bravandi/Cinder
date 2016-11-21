@@ -46,12 +46,7 @@ def __execute_delete_procedure(name, args):
         tools.log("DELETE Called: %s args-output: %s" % (name, args), debug=True)
 
     except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
-        else:
-            print(err)
+        tools.log("ERROR in __execute_delete_procedure. MSG: %s" % str(err))
 
     finally:
 
@@ -66,7 +61,7 @@ def execute_get_procedure_dictionary(name, args=()):
 
         cursor = conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
 
-        extcur = cursor.callproc(name, args)
+        cursor.callproc(name, args)
 
         result_sets = []
 
@@ -76,10 +71,14 @@ def execute_get_procedure_dictionary(name, args=()):
             if result_set != ():
                 result_sets.append(result_set)
 
-            if cursor.nextset() is None:
+            try:
+                if cursor.nextset() is None:
+                    break
+            except MySQLdb.Error as err:
+                tools.log("ERROR in execute_get_procedure_dictionary on cursor.nextset(). MSG: %s" % str(err))
                 break
 
-        tools.log("GET Called: %s ARGS: %s OUTPUT: %s" % (name, args, result_sets), debug=True)
+        tools.log("GET Called: %s ARGS: %s result_sets LEN: %i" % (name, args, len(result_sets)), debug=True)
 
         if len(result_sets) == 1:
             result_sets = result_sets[0]
@@ -88,7 +87,7 @@ def execute_get_procedure_dictionary(name, args=()):
 
     except MySQLdb.Error as err:
 
-        print (err)
+        tools.log("ERROR in execute_get_procedure_dictionary. MSG: %s" % str(err))
 
     finally:
 
@@ -125,7 +124,7 @@ def execute_get_procedure_tuple(name, args=()):
 
             cursor.nextset()
 
-        tools.log("GET Called: %s ARGS: %s OUTPUT Result Sets Length: %s" % (name, args, len(result_sets)), debug=True)
+        tools.log("GET Called: %s ARGS: %s OUTPUT result_sets Length: %s" % (name, args, len(result_sets)), debug=True)
 
         if len(result_sets) == 1:
             result_sets = result_sets[0]
@@ -134,7 +133,7 @@ def execute_get_procedure_tuple(name, args=()):
 
     except MySQLdb.Error as err:
 
-        print (err)
+        tools.log("ERROR in execute_get_procedure_tuple. MSG: %s" % str(err))
 
     finally:
 
@@ -171,7 +170,7 @@ def __execute_insert_procedure(name, args):
         return insert_id
 
     except MySQLdb.Error as err:
-        tools.log("ARGHS -->%s\nERR-->%s" + (str(args), str(err)))
+        tools.log("ERROR in __execute_insert_procedure. ARGS -->%s\nERR-->%s" + (str(args), str(err)))
 
     finally:
 

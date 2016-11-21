@@ -6,6 +6,7 @@ import cgi
 import pdb
 import json
 import database
+import classification
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -90,11 +91,21 @@ class Handler(BaseHTTPRequestHandler):
 
         # tools.log("_handle_request: %s" % (path), debug=True)
 
+        if path == "/get_prediction":
+
+            classifier = classification.Classification.get_current_reload(training_dataset_size=300)
+            prediction = classifier.predict(
+                clock=long(parameters["clock"][0]),
+                live_volume_count_during_clock=long(parameters["live_volume_count_during_clock"][0]),
+                requested_read_iops_total=long(parameters["requested_read_iops_total"][0]),
+                requested_write_iops_total=long(parameters["requested_write_iops_total"][0])
+            )
+
+            return json.dumps(prediction)
+
         if path == "/get_current_experiment":
 
-            experimet = database.execute_get_procedure_dictionary("get_current_experiment")[0]
-
-            return experimet
+            return database.execute_get_procedure_dictionary("get_current_experiment")[0]
 
         if path == "/get_training_dataset":
 
@@ -106,6 +117,17 @@ class Handler(BaseHTTPRequestHandler):
                 ))
 
             return training_dataset
+
+        if path == "/get_backends_weights":
+            weights = database.execute_get_procedure_dictionary(
+                "get_backends_weights",
+                args=(
+                    long(parameters["experiment_id"][0]),
+                    long(parameters["volume_request_id"][0])
+                )
+            )
+
+            return weights
 
         if path == "/delete_volume":
             return database.delete_volume(

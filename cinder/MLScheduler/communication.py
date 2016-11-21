@@ -40,6 +40,26 @@ class ScheduleResponseType:
     def rejected_no_weighed_host(): return 7
 
 
+class Communication:
+
+    _current_experiment = None
+    __server_url = 'http://10.18.75.100:8888/'
+
+    @staticmethod
+    def get_current_experiment():
+        if Communication._current_experiment is not None:
+
+            return Communication._current_experiment
+
+        ex = requests.get(Communication.__server_url + "get_current_experiment")
+
+        ex = json.loads(ex.text)
+        ex["config"] = json.loads(ex["config"])
+
+        Communication._current_experiment = ex
+
+        return Communication._current_experiment
+
 def insert_volume(
         experiment_id,
         cinder_id,
@@ -137,22 +157,29 @@ def get_training_dataset(
     return json.loads(ex.text)
 
 
-_current_experiment = None
+def get_backends_weights(experiment_id, volume_request_id):
+
+    params = {
+        "experiment_id": experiment_id,
+        "volume_request_id": volume_request_id
+    }
+
+    weights = requests.get("%sget_backends_weights?%s" % (__server_url, urllib.urlencode(params)))
+
+    return json.loads(weights.text)
 
 
-def get_current_experiment():
-    if _current_experiment is not None:
-        return _current_experiment
+def get_prediction(clock, live_volume_count_during_clock, requested_read_iops_total, requested_write_iops_total):
+    params = {
+        "clock": clock,
+        "live_volume_count_during_clock": live_volume_count_during_clock,
+        "requested_read_iops_total": requested_read_iops_total,
+        "requested_write_iops_total": requested_write_iops_total
+    }
 
-    ex = requests.get(__server_url + "get_current_experiment")
+    prediction = requests.get("%sget_prediction?%s" % (__server_url, urllib.urlencode(params)))
 
-    ex = json.loads(ex.text)
-    ex["config"] = json.loads(ex["config"])
-
-    return ex
-
-
-_current_experiment = get_current_experiment()
+    return json.loads(prediction.text)
 
 
 def volume_clock_calc(t):
@@ -160,7 +187,7 @@ def volume_clock_calc(t):
 
 try:
     # define the function from the database
-    exec(_current_experiment["config"]["volume_clock_calc"])
+    exec(Communication.get_current_experiment()["config"]["volume_clock_calc"])
 except:
     print("Error an executing the experiment VOLUME calculate clock function.")
     # sys.exit(1)
@@ -171,4 +198,12 @@ def _parse_response(response):
 
 
 if __name__ == "__main__":
+
+    # print get_backends_weights(get_current_experiment()["id"], 2333)
+    print get_prediction(
+        clock=50,
+        live_volume_count_during_clock=4,
+        requested_read_iops_total=2000,
+        requested_write_iops_total=2500
+    )
     pass
