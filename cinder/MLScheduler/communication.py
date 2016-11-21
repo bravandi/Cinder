@@ -169,12 +169,10 @@ def get_backends_weights(experiment_id, volume_request_id):
     return json.loads(weights.text)
 
 
-def get_prediction(clock, live_volume_count_during_clock, requested_read_iops_total, requested_write_iops_total):
+def get_prediction(volume_request_id):
+
     params = {
-        "clock": clock,
-        "live_volume_count_during_clock": live_volume_count_during_clock,
-        "requested_read_iops_total": requested_read_iops_total,
-        "requested_write_iops_total": requested_write_iops_total
+        "volume_request_id": volume_request_id
     }
 
     prediction = requests.get("%sget_prediction?%s" % (__server_url, urllib.urlencode(params)))
@@ -188,8 +186,21 @@ def volume_clock_calc(t):
 try:
     # define the function from the database
     exec(Communication.get_current_experiment()["config"]["volume_clock_calc"])
-except:
-    print("Error an executing the experiment VOLUME calculate clock function.")
+except Exception as err:
+    print("Error an executing the experiment VOLUME calculate clock function. ERR:%s" % str(err))
+    # sys.exit(1)
+
+
+def get_volume_performance_meter_clock_calc(t=datetime.now()):
+    exec (Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
+
+    return volume_performance_meter_clock_calc(t)
+
+try:
+    # define the function from the database
+    exec(Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
+except Exception as err:
+    print("Error an executing the experiment VOLUME_PERFORMANCE_METER calculate clock function. ERR:%s" % str(err))
     # sys.exit(1)
 
 
@@ -201,9 +212,6 @@ if __name__ == "__main__":
 
     # print get_backends_weights(get_current_experiment()["id"], 2333)
     print get_prediction(
-        clock=50,
-        live_volume_count_during_clock=4,
-        requested_read_iops_total=2000,
-        requested_write_iops_total=2500
+        volume_request_id=2352
     )
     pass

@@ -95,13 +95,10 @@ class Handler(BaseHTTPRequestHandler):
 
             classifier = classification.Classification.get_current_reload(training_dataset_size=300)
             prediction = classifier.predict(
-                clock=long(parameters["clock"][0]),
-                live_volume_count_during_clock=long(parameters["live_volume_count_during_clock"][0]),
-                requested_read_iops_total=long(parameters["requested_read_iops_total"][0]),
-                requested_write_iops_total=long(parameters["requested_write_iops_total"][0])
+                volume_request_id=long(parameters["volume_request_id"][0])
             )
 
-            return json.dumps(prediction)
+            return prediction
 
         if path == "/get_current_experiment":
 

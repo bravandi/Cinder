@@ -8,7 +8,6 @@ from sklearn.model_selection import cross_val_score
 
 
 class Classification:
-
     current_classification = None
 
     def __init__(self, classifier_name, draw_decision_tree=False, run_cross_validation=False):
@@ -192,34 +191,50 @@ class Classification:
 
         for cls in classes.keys():
             if cls in classes_from_clf:
-
-                classes[cls] = prediction[classes_from_clf.index(cls)]
+                classes[cls] = round(prediction[classes_from_clf.index(cls)], 5)
 
         return classes
 
-    def predict(self, clock, live_volume_count_during_clock, requested_write_iops_total, requested_read_iops_total):
+    def predict(self, volume_request_id):
 
         prediction = {}
+        values = {}
 
-        values = [[clock, live_volume_count_during_clock, requested_write_iops_total, requested_read_iops_total]]
+        weights = communication.get_backends_weights(
+            experiment_id=communication.Communication.get_current_experiment()["id"],
+            volume_request_id=volume_request_id)
+
+        volume_request = weights[0][0]
+        clock = communication.get_volume_performance_meter_clock_calc(datetime.now())
+
+        for backend_weight in weights[1:]:
+            row = backend_weight[0]
+
+            values[row["cinder_id"]] = [[
+                clock,
+                row["live_volume_count_during_clock"] + 1,
+                row["requested_write_iops_total"] + volume_request["write_iops"],
+                row["requested_read_iops_total"] + volume_request["read_iops"]
+            ]]
 
         for cinder_id in self.classifiers_for_read_iops.keys():
-
             read_classifier = self.classifiers_for_read_iops[cinder_id]["classifier"]
             write_classifier = self.classifiers_for_write_iops[cinder_id]["classifier"]
 
+            values_array = values[cinder_id]
+
             prediction[cinder_id] = {
                 "read_violation": {
-                    "class": read_classifier.predict(values)[0],
+                    "class": read_classifier.predict(values_array)[0],
                     "prob": self._include_classes_with_zero_probability(
                         read_classifier,
-                        list(read_classifier.predict_proba(values)[0]))
+                        list(read_classifier.predict_proba(values_array)[0]))
                 },
                 "write_violation": {
-                    "class": write_classifier.predict(values)[0],
+                    "class": write_classifier.predict(values_array)[0],
                     "prob": self._include_classes_with_zero_probability(
                         write_classifier,
-                        list(write_classifier.predict_proba(values)[0]))
+                        list(write_classifier.predict_proba(values_array)[0]))
                 }
             }
 
@@ -228,11 +243,7 @@ class Classification:
 
 _clf = None
 
-
-
-
 if __name__ == "__main__":
-
     d = Classification(
         classifier_name="tree"
     )
@@ -242,8 +253,5 @@ if __name__ == "__main__":
     )
 
     print d.predict(
-        clock=50,
-        live_volume_count_during_clock=4,
-        requested_read_iops_total=2000,
-        requested_write_iops_total=2500
+        volume_request_id=2352
     )

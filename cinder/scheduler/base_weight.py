@@ -22,7 +22,7 @@ import abc
 import six
 
 from cinder.scheduler import base_handler
-
+import cinder.MLScheduler.communication as communication
 
 def normalize(weight_list, minval=None, maxval=None):
     """Normalize the values in a list between 0 and 1.0.
@@ -119,6 +119,7 @@ class BaseWeigher(object):
 
 
 class BaseWeightHandler(base_handler.BaseHandler):
+
     object_class = WeighedObject
 
     def get_weighed_objects(self, weigher_classes, obj_list,
@@ -131,6 +132,8 @@ class BaseWeightHandler(base_handler.BaseHandler):
         weighed_objs = [self.object_class(obj, 0.0) for obj in obj_list]
         for weigher_cls in weigher_classes:
             weigher = weigher_cls()
+
+            # babak return from capacity.py
             weights = weigher.weigh_objects(weighed_objs, weighing_properties)
 
             # Normalize the weights
@@ -138,8 +141,31 @@ class BaseWeightHandler(base_handler.BaseHandler):
                                 minval=weigher.minval,
                                 maxval=weigher.maxval)
 
+
+
             for i, weight in enumerate(weights):
                 obj = weighed_objs[i]
                 obj.weight += weigher.weight_multiplier() * weight
+
+
+        experiment_id_volume_request_id = weighing_properties['request_spec']['volume_properties']['display_name'].split(',')
+
+        weighed_objs = []
+
+        prediction = communication.get_prediction(
+            volume_request_id=int(experiment_id_volume_request_id[1])
+        )
+        #prediction["block1@lvm#LVM"]['read_violation']["class"]
+        #prediction["block1@lvm#LVM"]['read_violation']["prob"]
+        #prediction["block1@lvm#LVM"]['write_violation']["prob"]
+
+        import pdb
+        pdb.set_trace()
+
+
+        # for backend in weighed_obj_list[0].to_dict():
+        #     # weighed_obj_list[0].to_dict()['host'] --> u'block5@lvm#LVM'
+        #
+        #     pass
 
         return sorted(weighed_objs, key=lambda x: x.weight, reverse=True)
