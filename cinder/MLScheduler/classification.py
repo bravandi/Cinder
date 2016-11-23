@@ -10,9 +10,12 @@ from sklearn.model_selection import cross_val_score
 class Classification:
     current_classification = None
 
-    def __init__(self, classifier_name, violation_iops_classes, read_is_priority, draw_decision_tree=False,
-                 run_cross_validation=False):
+    def __init__(self,
+                 classifier_name, violation_iops_classes,
+                 read_is_priority, training_experiment_id,
+                 draw_decision_tree=False, run_cross_validation=False):
 
+        self.training_experiment_id = training_experiment_id
         self.read_is_priority = read_is_priority
         self.violation_iops_classes = violation_iops_classes
         self.classifier_name = classifier_name
@@ -23,13 +26,14 @@ class Classification:
         self.create_time = datetime.now()
 
     @staticmethod
-    def get_current_reload(training_dataset_size, violation_iops_classes):
+    def get_current_or_initialize(training_dataset_size, violation_iops_classes, training_experiment_id):
 
         if Classification.current_classification is None:
             clf = Classification(
                 classifier_name="tree",
                 violation_iops_classes=violation_iops_classes,
-                read_is_priority=True
+                read_is_priority=True,
+                training_experiment_id=training_experiment_id
             )
 
             clf.create_models(
@@ -87,7 +91,7 @@ class Classification:
     def create_models(self, training_dataset_size):
 
         training_data = communication.get_training_dataset(
-            experiment_id=communication.Communication.get_current_experiment()["id"],
+            experiment_id=self.training_experiment_id,
             training_dataset_size=training_dataset_size
         )
 
@@ -204,12 +208,12 @@ class Classification:
         classifier_predictions = {}
         values = {}
 
+        if communication.Communication.get_config("is_training") is True:
+            return None
+
         weights = communication.get_backends_weights(
             experiment_id=communication.Communication.get_current_experiment()["id"],
             volume_request_id=volume_request_id)
-
-        if communication.Communication.get_config("is_training") is True:
-            return None
 
         # there were no records for training or prediction. Probably its a trainng experiment
         if len(weights) == 1 or len(self.classifiers_for_read_iops) == 0 or len(self.classifiers_for_write_iops) == 0:
@@ -293,19 +297,19 @@ class Classification:
         return final_result
 
 
-_clf = None
-
 if __name__ == "__main__":
-    d = Classification(
-        classifier_name="tree",
-        violation_iops_classes=["v1", "v2", "v3", "v4"],
-        read_is_priority=True
-    )
-
-    d.create_models(
-        training_dataset_size=300
-    )
-
-    print d.predict(
-        volume_request_id=2352
-    )
+    # d = Classification(
+    #     classifier_name="tree",
+    #     violation_iops_classes=["v1", "v2", "v3", "v4"],
+    #     read_is_priority=True,
+    #     training_experiment_id=0
+    # )
+    #
+    # d.create_models(
+    #     training_dataset_size=300
+    # )
+    #
+    # print d.predict(
+    #     volume_request_id=2352
+    # )
+    pass

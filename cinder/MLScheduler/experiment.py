@@ -7,18 +7,18 @@ import json
 import sys
 import pdb
 
-class Experiment:
 
+class Experiment:
     experiment = None
 
-    def __init__(self, add_new_experiment, config='', print_output_if_have_error=False, print_output=False):
+    def __init__(self, add_new_experiment, config='', print_output_if_have_error=False,
+                 print_output=False):
 
         self.print_output_if_have_error = print_output_if_have_error
         self.print_output = print_output
         self.servers = []
 
         if add_new_experiment:
-
             communication.insert_experiment(
                 comment='',
                 scheduler_algorithm='',
@@ -62,7 +62,6 @@ class Experiment:
     def close_all_ssh_client(self):
 
         for server in self.servers:
-
             ssh_client = server["ssh"]
             ssh_client.close()
 
@@ -83,11 +82,11 @@ class Experiment:
                     server,
                     "echo '%s\t%s' | sudo tee --append /etc/hosts" % (server["ip"], server["name"]))
 
-
             self._run_command(server, "sudo rm -r -d ~/MLSchedulerAgent/")
             ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
             if ret["retval"] == 128:
-                self._run_command(server, "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
+                self._run_command(server,
+                                  "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
 
             self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
 
@@ -120,7 +119,9 @@ class Experiment:
             args.append(str(k))
             args.append(str(v))
 
-        self._run_command_on_all_servers("sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (" ".join(args)))
+        self._run_command_on_all_servers(
+            "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (
+            " ".join(args)))
 
     def start_performance_evaluators(self, arguments):
 
@@ -130,8 +131,8 @@ class Experiment:
             args.append(str(v))
 
         self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (" ".join(args)))
-
+            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (
+            " ".join(args)))
 
     def kill_performance_evaluators(self):
         self._run_command_on_all_servers(
@@ -146,7 +147,8 @@ class Experiment:
             self._run_command(server, command)
 
     def detach_delete_all_servers_volumes(self):
-        self._run_command_on_all_servers("sudo nohup python ~/MLSchedulerAgent/workload_generator.py det-del >~/detach_delete_all_servers_volumes.out 2>~/detach_delete_all_servers_volumes.err &")
+        self._run_command_on_all_servers(
+            "sudo nohup python ~/MLSchedulerAgent/workload_generator.py det-del >~/detach_delete_all_servers_volumes.out 2>~/detach_delete_all_servers_volumes.err &")
 
     @staticmethod
     def _create_ssh_clients(server_ip):
@@ -169,6 +171,7 @@ class Experiment:
 
         return client
 
+
 if __name__ == '__main__':
 
     # todo ******* run python experiment.py execute --command "sudo mkdir /media" on the other servers that you shut down
@@ -183,17 +186,17 @@ if __name__ == '__main__':
                             'performance', 'det-del', 'kill-workload',
                             'kill-performance', 'execute', 'init', 'create-experiment'],
                         help=
-"""
-Manage experiments.
-"""
+                        """
+                        Manage experiments.
+                        """
                         )
 
     parser.add_argument('--new', default=False, metavar='', type=bool,
                         required=False,
                         help='Create new experiment otherwise the last created experiment will be used.')
 
-    parser.add_argument('--is_training', default=False, metavar='', type=bool, required=False,
-                        help='training will use the default scheduler.')
+    parser.add_argument('--training_experiment_id', default=0, metavar='', type=long, required=False,
+                        help='if set 0 it will use the default scheduler. Other wise will use the given id to generate training dataset and create classification model to perform iops prediction.')
 
     parser.add_argument('--command', metavar='', type=str,
                         required=False,
@@ -239,31 +242,36 @@ Manage experiments.
 
         sys.exit()
 
+    is_training = False
+    if args.training_experiment_id > 0:
+        is_training = True
+
     e = Experiment(
-        add_new_experiment=args.new,
+        add_new_experiment=is_training,
         print_output_if_have_error=True,
         print_output=True,
         config=json.dumps({
+            "training_experiment_id": args.training_experiment_id,
             "is_training": args.is_training,
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": 180,
             "training_dataset_size": 500,
             "volume_clock_calc":
-"""
-def volume_clock_calc(t):
-    return t.strftime("%s")
-""",
+                """
+                def volume_clock_calc(t):
+                    return t.strftime("%s")
+                """,
             "volume_performance_meter_clock_calc":
-"""
-def volume_performance_meter_clock_calc(t):
-    if(t.second > 30):
-        t = t.replace(second=30)
-    else:
-        t = t.replace(second=0)
-    t = t.replace(microsecond=0)
-    return t.strftime("%s")
-"""
+                """
+                def volume_performance_meter_clock_calc(t):
+                    if(t.second > 30):
+                        t = t.replace(second=30)
+                    else:
+                        t = t.replace(second=0)
+                    t = t.replace(microsecond=0)
+                    return t.strftime("%s")
+                """
         })
     )
 
@@ -282,7 +290,7 @@ def volume_performance_meter_clock_calc(t):
     if "kill-workload" in args.commands:
         e.kill_workload_generator_all_servers()
 
-        #sleep 4 to make sure all the processes are dead are not going to create new volumes!
+        # sleep 4 to make sure all the processes are dead are not going to create new volumes!
         if "det-del" in args.commands:
             time.sleep(4)
 

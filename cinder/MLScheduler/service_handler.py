@@ -95,9 +95,11 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/get_prediction":
 
-            classifier = classification.Classification.get_current_reload(
+            classifier = classification.Classification.get_current_or_initialize(
                 training_dataset_size=communication.Communication.get_current_experiment()["config"]["training_dataset_size"],
-                violation_iops_classes=["v1", "v2", "v3", "v4"])
+                violation_iops_classes=["v1", "v2", "v3", "v4"],
+                training_experiment_id=communication.Communication.get_current_experiment()["config"]["training_experiment_id"]
+            )
 
             prediction = classifier.predict(
                 volume_request_id=long(parameters["volume_request_id"][0])
