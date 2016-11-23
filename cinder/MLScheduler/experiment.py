@@ -11,14 +11,16 @@ import pdb
 class Experiment:
     experiment = None
 
-    def __init__(self, add_new_experiment, config='', print_output_if_have_error=False,
-                 print_output=False):
+    def __init__(self, add_new_experiment, config, print_output_if_have_error=False,
+                 print_output=False, debug_run_only_one_server=False):
 
         self.print_output_if_have_error = print_output_if_have_error
         self.print_output = print_output
         self.servers = []
+        self.debug_run_only_one_server = debug_run_only_one_server
 
         if add_new_experiment:
+
             communication.insert_experiment(
                 comment='',
                 scheduler_algorithm='',
@@ -54,6 +56,9 @@ class Experiment:
                     "ip": server_ip,
                     "name": server.name
                 })
+
+                if self.debug_run_only_one_server:
+                    break
 
             except Exception as ex:
                 tools.log("Error -> canot create SSH client for %s\nError message -> %s"
@@ -121,7 +126,7 @@ class Experiment:
 
         self._run_command_on_all_servers(
             "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (
-            " ".join(args)))
+                " ".join(args)))
 
     def start_performance_evaluators(self, arguments):
 
@@ -132,7 +137,7 @@ class Experiment:
 
         self._run_command_on_all_servers(
             "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (
-            " ".join(args)))
+                " ".join(args)))
 
     def kill_performance_evaluators(self):
         self._run_command_on_all_servers(
@@ -195,6 +200,10 @@ if __name__ == '__main__':
                         required=False,
                         help='Create new experiment otherwise the last created experiment will be used.')
 
+    parser.add_argument('--debug_run_only_one_server', default=False, metavar='', type=bool,
+                        required=False,
+                        help='Only run one server for debug purposes.')
+
     parser.add_argument('--training_experiment_id', default=0, metavar='', type=long, required=False,
                         help='if set 0 it will use the default scheduler. Other wise will use the given id to generate training dataset and create classification model to perform iops prediction.')
 
@@ -210,9 +219,11 @@ if __name__ == '__main__':
 
     if "shutdown" in args.commands:
         args.commands = ["kill-workload", "kill-performance", "det-del"]
+        args.new = False
 
     if "start" in args.commands:
         args.commands = ["init", "workload", "performance"]
+        args.new = False
 
     if "start-new" in args.commands:
         args.commands = ["init", "workload", "performance"]
@@ -242,17 +253,18 @@ if __name__ == '__main__':
 
         sys.exit()
 
-    is_training = False
+    is_training = True
     if args.training_experiment_id > 0:
-        is_training = True
+        is_training = False
 
     e = Experiment(
-        add_new_experiment=is_training,
+        add_new_experiment=args.new,
         print_output_if_have_error=True,
         print_output=True,
+        debug_run_only_one_server=args.debug_run_only_one_server,
         config=json.dumps({
             "training_experiment_id": args.training_experiment_id,
-            "is_training": args.is_training,
+            "is_training": is_training,
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": 180,

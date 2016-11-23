@@ -89,6 +89,8 @@ class Classification:
         return cut1, cut2, feature_names
 
     def create_models(self, training_dataset_size):
+        if communication.Communication.get_config("is_training") is True:
+            return None
 
         training_data = communication.get_training_dataset(
             experiment_id=self.training_experiment_id,
