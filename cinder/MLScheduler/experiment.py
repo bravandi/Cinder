@@ -5,6 +5,7 @@ import communication
 import time
 import json
 import sys
+import json
 import pdb
 
 
@@ -12,8 +13,9 @@ class Experiment:
     experiment = None
 
     def __init__(self, add_new_experiment, config, print_output_if_have_error=False,
-                 print_output=False, debug_run_only_one_server=False):
+                 print_output=False, debug_run_only_one_server=False, debug_server_ip=None):
 
+        self.debug_server_ip = debug_server_ip
         self.print_output_if_have_error = print_output_if_have_error
         self.print_output = print_output
         self.servers = []
@@ -43,8 +45,15 @@ class Experiment:
             try:
                 server_ip = server.networks['provider'][0]
 
-                if server_ip == '10.18.75.182':
-                    continue
+                if self.debug_run_only_one_server:
+
+                    if server_ip != self.debug_server_ip:
+
+                        continue
+                else:
+                    if server_ip == debug_server_ip:
+                        continue
+
 
                 tools.log("Connecting via ssh to %s" % (server_ip))
 
@@ -56,9 +65,6 @@ class Experiment:
                     "ip": server_ip,
                     "name": server.name
                 })
-
-                if self.debug_run_only_one_server:
-                    break
 
             except Exception as ex:
                 tools.log("Error -> canot create SSH client for %s\nError message -> %s"
@@ -211,9 +217,8 @@ if __name__ == '__main__':
                         required=False,
                         help='Command that needs to be executed.')
 
-    parser.add_argument("--max_number_volumes", default=6, metavar='', type=int,
-                        required=False,
-                        help='max number of volumes each worklaod generator creates')
+    parser.add_argument("--max_number_volumes", default="[[6], [1.0]]", metavar='', type=str, required=False,
+                        help='max number of volumes each worklaod generator creates. example:[[500, 750, 1000], [0.5, 0.3, 0.2]]. will be fed to numpy.random.choice')
 
     args = parser.parse_args()
 
@@ -234,10 +239,13 @@ if __name__ == '__main__':
 
     workload_args = {
         "--fio_test_name": "workload_generator.fio",
-        '--delay_between_workload_generation': 5, #8
-        "--max_number_volumes": args.max_number_volumes,
-        "--volume_life_seconds": 60, # 500
-        "--volume_size": 9
+
+        "--request_read_iops": json.dumps("[[500, 750, 1000], [0.5, 0.3, 0.2]]"),
+        "--request_write_iops": json.dumps("[[300, 400, 400], [0.5, 0.3, 0.2]]"),
+        '--delay_between_workload_generation': json.dumps("[[5], [1.0]]"), #it was 8 on exp[1]
+        "--max_number_volumes": json.dumps(args.max_number_volumes),
+        "--volume_life_seconds": json.dumps("[[500], [1.0]]"),
+        "--volume_size": json.dumps("[[9], [1.0]]")
     }
 
     performance_args = {
@@ -258,6 +266,7 @@ if __name__ == '__main__':
         is_training = False
 
     e = Experiment(
+        debug_server_ip='10.18.75.182',
         add_new_experiment=args.new,
         print_output_if_have_error=True,
         print_output=True,
