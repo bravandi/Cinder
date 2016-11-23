@@ -1,5 +1,6 @@
 import os
 import requests
+import tools
 import urllib
 from datetime import datetime
 import json
@@ -55,13 +56,18 @@ class Communication:
         if Communication._current_experiment is not None:
             return Communication._current_experiment
 
-        ex = requests.get(Communication.__server_url + "get_current_experiment")
+        try:
+            ex = requests.get(Communication.__server_url + "get_current_experiment")
+        except Exception as err:
+            tools.log("CANNOT CONNECT TO SERVER_HANDLER to get the CURRENT EXPERIMENT")
+            return None
 
         try:
             ex = json.loads(ex.text)
 
             ex["config"] = json.loads(ex["config"])
         except Exception as err:
+            tools.log("ERROR [get_current_experiment] cannot load the experiment 'config'")
             return None
 
         Communication._current_experiment = ex
@@ -193,7 +199,7 @@ try:
     # define the function from the database
     exec (Communication.get_current_experiment()["config"]["volume_clock_calc"])
 except Exception as err:
-    print("Error an executing the experiment VOLUME calculate clock function. ERR:%s" % str(err))
+    print("ERROR on dynamic add of [volume_clock_calc]. IGNORE, if running ['shutdown', 'ServiceHandler']. ERR:%s" % str(err))
     # sys.exit(1)
 
 
@@ -210,7 +216,7 @@ try:
     # define the function from the database
     exec (Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
 except Exception as err:
-    print("Error on executing get_volume_performance_meter_clock_calc to create dynamic function. ERR:%s" % str(err))
+    print("ERROR on dynamic add of [get_volume_performance_meter_clock_calc]. IGNORE, if running ['shutdown', 'ServiceHandler']. ERR:%s" % str(err))
     # sys.exit(1)
 
 

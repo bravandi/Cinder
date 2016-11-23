@@ -6,6 +6,8 @@ import MySQLdb.cursors
 import MySQLdb.converters
 import pdb
 import tools
+
+
 # from decimal import Decimal
 # from mysql.connector import MySQLConnection, Error
 
@@ -19,12 +21,21 @@ def __create_connection_for_insert_delete():
     :return:
     """
     return mysql.connector.connect(user='babak', password='123',
-                                          host='10.18.75.100',
-                                          database='MLScheduler')
+                                   host='10.18.75.100',
+                                   database='MLScheduler')
+
+
+def __str_args(args):
+    ret = []
+    for value in args:
+
+        if isinstance(value, basestring) and len(value) > 60:
+            value = value[0: 60] + "..."
+        ret.append(value)
+    return str(set(ret))
 
 
 def __create_connection_for_get():
-
     conv = MySQLdb.converters.conversions.copy()
     conv[246] = float  # convert decimals to floats
     conv[10] = str  # convert dates to strings
@@ -33,7 +44,6 @@ def __create_connection_for_get():
 
 
 def __execute_delete_procedure(name, args):
-
     try:
         conn = __create_connection_for_insert_delete()
 
@@ -43,10 +53,10 @@ def __execute_delete_procedure(name, args):
 
         conn.commit()
 
-        tools.log("DELETE Called: %s args-output: %s" % (name, args), debug=True)
+        tools.log("PROCEDURE CALLED [DELETE]: %s args-output: %s" % (name, __str_args(args)), debug=True)
 
     except mysql.connector.Error as err:
-        tools.log("ERROR in __execute_delete_procedure. MSG: %s" % str(err))
+        tools.log("ERROR in [__execute_delete_procedure]. ARGS: %s\nMSG: %s" % (args, str(err)))
 
     finally:
 
@@ -55,7 +65,6 @@ def __execute_delete_procedure(name, args):
 
 
 def execute_get_procedure_dictionary(name, args=()):
-
     try:
         conn = __create_connection_for_get()
 
@@ -75,10 +84,12 @@ def execute_get_procedure_dictionary(name, args=()):
                 if cursor.nextset() is None:
                     break
             except MySQLdb.Error as err:
-                tools.log("ERROR in execute_get_procedure_dictionary on cursor.nextset(). MSG: %s" % str(err))
+                tools.log("ERROR in [execute_get_procedure_dictionary] on cursor.nextset(). ARGS: %s\nMSG: %s" %
+                          (args, str(err)))
                 break
 
-        tools.log("GET Called: %s ARGS: %s result_sets LEN: %i" % (name, args, len(result_sets)), debug=True)
+        tools.log("PROCEDURE CALLED [GET]: %s ARGS: %s result_sets LEN: %i" %
+                  (name, __str_args(args), len(result_sets)), debug=True)
 
         if len(result_sets) == 1:
             result_sets = result_sets[0]
@@ -96,13 +107,12 @@ def execute_get_procedure_dictionary(name, args=()):
 
 
 def execute_get_procedure_tuple(name, args=()):
-
     try:
         conn = __create_connection_for_get()
 
         cursor = conn.cursor(cursorclass=MySQLdb.cursors.Cursor)
 
-        extcur = cursor.callproc(name, args)
+        cursor.callproc(name, args)
 
         result_sets = []
 
@@ -114,7 +124,7 @@ def execute_get_procedure_tuple(name, args=()):
 
             field_names = tuple([i[0] for i in cursor.description])
 
-            result_set = result_set + (field_names, )
+            result_set = result_set + (field_names,)
 
             fall = cursor.fetchall()
 
@@ -124,7 +134,8 @@ def execute_get_procedure_tuple(name, args=()):
 
             cursor.nextset()
 
-        tools.log("GET Called: %s ARGS: %s OUTPUT result_sets Length: %s" % (name, args, len(result_sets)), debug=True)
+        tools.log("PROCEDURE CALLED [GET]: %s ARGS: %s OUTPUT result_sets Length: %s" %
+                  (name, __str_args(args), len(result_sets)), debug=True)
 
         if len(result_sets) == 1:
             result_sets = result_sets[0]
@@ -133,7 +144,8 @@ def execute_get_procedure_tuple(name, args=()):
 
     except MySQLdb.Error as err:
 
-        tools.log("ERROR in execute_get_procedure_tuple. MSG: %s" % str(err))
+        tools.log("ERROR in [execute_get_procedure_tuple]. ARGS: %s\nMSG: %s" %
+                  (args, str(err)))
 
     finally:
 
@@ -165,12 +177,14 @@ def __execute_insert_procedure(name, args):
         output = list(output)
         insert_id = output[len(output) - 1]
 
-        tools.log("PROCEDURE CALLED: %s OUTPUT: %s" % (name, output), debug=True)
+        tools.log("PROCEDURE CALLED: %s OUTPUT: %s" %
+                  (name, __str_args(output)), debug=True)
 
         return insert_id
 
     except MySQLdb.Error as err:
-        tools.log("ERROR in __execute_insert_procedure. ARGS -->%s\nERR-->%s" + (str(args), str(err)))
+        tools.log("ERROR in __execute_insert_procedure. ARGS -->%s\nERR-->%s" %
+                  (args, str(err)))
 
     finally:
 
@@ -179,12 +193,11 @@ def __execute_insert_procedure(name, args):
 
 
 def delete_volume(
-        id, #			VARCHAR(36),
-        cinder_id, #		VARCHAR(36),
-        delete_clock, #		INT(11),
-        delete_time #			    INT(11),
-    ):
-
+        id,  # VARCHAR(36),
+        cinder_id,  # VARCHAR(36),
+        delete_clock,  # INT(11),
+        delete_time  # INT(11),
+):
     args = (
         id,
         cinder_id,
@@ -196,12 +209,11 @@ def delete_volume(
 
 
 def insert_tenant(
-	experiment_id, #			VARCHAR(36),
-    nova_id, #		VARCHAR(36),
-    description, # mediumtext,
-	create_time #	DATETIME
-    ):
-
+        experiment_id,  # VARCHAR(36),
+        nova_id,  # VARCHAR(36),
+        description,  # mediumtext,
+        create_time  # DATETIME
+):
     args = (
         experiment_id,  # VARCHAR(36),
         nova_id,  # VARCHAR(36),
@@ -213,13 +225,12 @@ def insert_tenant(
 
 
 def insert_schedule_response(
-	experiment_id, #			VARCHAR(36),
-	volume_request_id, #		VARCHAR(36),
-    response_id, #		INT(11),
-	create_clock, #			    INT(11),
-	create_time #	DATETIME
-    ):
-
+        experiment_id,  # VARCHAR(36),
+        volume_request_id,  # VARCHAR(36),
+        response_id,  # INT(11),
+        create_clock,  # INT(11),
+        create_time  # DATETIME
+):
     args = (
         experiment_id,  # VARCHAR(36),
         volume_request_id,  # VARCHAR(36),
@@ -232,15 +243,14 @@ def insert_schedule_response(
 
 
 def insert_volume(
-    experiment_id,  #            bigint
-    cinder_id,  #                VARCHAR(36)
-    backend_cinder_id,  #		VARCHAR(36),
-    schedule_response_id,  #		bigint,
-    capacity,  #					INT(11),
-    create_clock,  # INT(11),
-	create_time #	DATETIME
+        experiment_id,  # bigint
+        cinder_id,  # VARCHAR(36)
+        backend_cinder_id,  # VARCHAR(36),
+        schedule_response_id,  # bigint,
+        capacity,  # INT(11),
+        create_clock,  # INT(11),
+        create_time  # DATETIME
 ):
-
     # sharp_index = backend_cinder_id.index("#")
     # if sharp_index > 0:
     #     backend_cinder_id = backend_cinder_id[0:sharp_index]
@@ -273,20 +283,19 @@ def insert_volume_performance_meter(
         terminate_wait,
         create_clock,
         create_time):
-
     args = (
         experiment_id,  # experiment_ID				bigint,
         tenant_id,
-        nova_id, #nova_id         VARCHAR(36)
+        nova_id,  # nova_id         VARCHAR(36)
         backend_id,  # backend_ID					bigint,
         volume_id,  # volume_ID					    bigint,
-        cinder_volume_id, #cinder_volume_id         VARCHAR(36)
+        cinder_volume_id,  # cinder_volume_id         VARCHAR(36)
         read_iops,  # read_IOPS						int,
         write_iops,  # write_IOPS					int,
-        duration, # duration                        float,
+        duration,  # duration                        float,
         sla_violation_id,  # SLA_violation_ID		int,
         io_test_output,  # io_test_output		    LONGTEXT
-        terminate_wait, # terminate_wait            int,
+        terminate_wait,  # terminate_wait            int,
         create_clock,  # create_clock				int,
         create_time,  # create_time		            DateTime,
     )
@@ -296,13 +305,12 @@ def insert_volume_performance_meter(
 
 def insert_experiment(
         workload_id,  # bigint,
-        comment, # MEDIUMTEXT
-        scheduler_algorithm, # MEDIUMTEXT
+        comment,  # MEDIUMTEXT
+        scheduler_algorithm,  # MEDIUMTEXT
         config,  # LONGTEXT,
-        workload_comment, # MEDIUMTEXT
-        workload_generate_method, #int
+        workload_comment,  # MEDIUMTEXT
+        workload_generate_method,  # int
         create_time):
-
     args = (
         workload_id,  # bigint,
         comment,  # MEDIUMTEXT
@@ -317,17 +325,16 @@ def insert_experiment(
 
 
 def insert_workload_generator(
-    experiment_id,
-    tenant_id, #				bigint,
-    nova_id, # VARCHAR(36)
-    duration, #					float,
-    read_iops,
-    write_iops,
-    command, #					LONGTEXT,
-    output, #					LONGTEXT,
-    create_clock, #			INT(11),
-    create_time):
-
+        experiment_id,
+        tenant_id,  # bigint,
+        nova_id,  # VARCHAR(36)
+        duration,  # float,
+        read_iops,
+        write_iops,
+        command,  # LONGTEXT,
+        output,  # LONGTEXT,
+        create_clock,  # INT(11),
+        create_time):
     args = (
         experiment_id,  # experiment_ID				bigint,
         tenant_id,  # bigint,
@@ -345,14 +352,14 @@ def insert_workload_generator(
 
 
 def insert_volume_request(
-    workload_id, #		bigint,
-    experiment_id, #		bigint,
-    capacity, #			INT(11),
-    type, #				INT(11),
-    read_iops, #		INT(11),
-    write_iops, #		INT(11),
-    create_clock, #		INT(11),
-    create_time  # DATETIME
+        workload_id,  # bigint,
+        experiment_id,  # bigint,
+        capacity,  # INT(11),
+        type,  # INT(11),
+        read_iops,  # INT(11),
+        write_iops,  # INT(11),
+        create_clock,  # INT(11),
+        create_time  # DATETIME
 ):
     args = (
         workload_id,  # bigint,
@@ -369,9 +376,9 @@ def insert_volume_request(
 
 
 def insert_workload(
-    comment, #		MEDIUMTEXT,
-    generate_method, #			INT(11),
-    create_time  # DATETIME
+        comment,  # MEDIUMTEXT,
+        generate_method,  # INT(11),
+        create_time  # DATETIME
 ):
     args = (
         comment,  # MEDIUMTEXT,
@@ -383,9 +390,9 @@ def insert_workload(
 
 
 if __name__ == '__main__':
-
     # insert_volume(cinder_id='c55', backend_ID=1, schedule_response_ID=1, capacity=1)
 
-    print insert_volume_request(workload_id=1, capacity=1, type=0, read_iops=500, write_iops=500, create_clock=0, create_time=datetime.now())
+    print insert_volume_request(workload_id=1, capacity=1, type=0, read_iops=500, write_iops=500, create_clock=0,
+                                create_time=datetime.now())
 
     pass

@@ -234,16 +234,16 @@ if __name__ == '__main__':
 
     workload_args = {
         "--fio_test_name": "workload_generator.fio",
-        '--delay_between_workload_generation': 8,
+        '--delay_between_workload_generation': 5, #8
         "--max_number_volumes": args.max_number_volumes,
-        "--volume_life_seconds": 500,
+        "--volume_life_seconds": 60, # 500
         "--volume_size": 9
     }
 
     performance_args = {
         "--fio_test_name": "resource_evaluation.fio",
-        "--terminate_if_takes": 175,
-        "--restart_gap": 25,
+        "--terminate_if_takes": 125, #175
+        "--restart_gap": 15, #25
         "--restart_gap_after_terminate": 50,
         "--show_fio_output": False,
     }
@@ -263,27 +263,27 @@ if __name__ == '__main__':
         print_output=True,
         debug_run_only_one_server=args.debug_run_only_one_server,
         config=json.dumps({
-            "training_experiment_id": args.training_experiment_id,
-            "is_training": is_training,
-            "workload_args": workload_args,
-            "performance_args": performance_args,
-            "mod_normalized_clock_for_feature_generation": 180,
-            "training_dataset_size": 500,
-            "volume_clock_calc":
-                """
-                def volume_clock_calc(t):
-                    return t.strftime("%s")
-                """,
-            "volume_performance_meter_clock_calc":
-                """
-                def volume_performance_meter_clock_calc(t):
-                    if(t.second > 30):
-                        t = t.replace(second=30)
-                    else:
-                        t = t.replace(second=0)
-                    t = t.replace(microsecond=0)
-                    return t.strftime("%s")
-                """
+"training_experiment_id": args.training_experiment_id,
+"is_training": is_training,
+"workload_args": workload_args,
+"performance_args": performance_args,
+"mod_normalized_clock_for_feature_generation": 180,
+"training_dataset_size": 2000,
+"volume_clock_calc":
+"""
+def volume_clock_calc(t):
+    return t.strftime("%s")
+""",
+"volume_performance_meter_clock_calc":
+"""
+def volume_performance_meter_clock_calc(t):
+    if(t.second > 30):
+        t = t.replace(second=30)
+    else:
+        t = t.replace(second=0)
+    t = t.replace(microsecond=0)
+    return t.strftime("%s")
+"""
         })
     )
 

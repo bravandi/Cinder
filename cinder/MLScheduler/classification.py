@@ -235,6 +235,10 @@ class Classification:
             ]]
 
         for cinder_id in self.classifiers_for_read_iops.keys():
+
+            if cinder_id not in values:
+                continue
+
             read_classifier = self.classifiers_for_read_iops[cinder_id]["classifier"]
             write_classifier = self.classifiers_for_write_iops[cinder_id]["classifier"]
 

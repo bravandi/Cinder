@@ -85,6 +85,7 @@ class SshClient:
                 'err': stderr.readlines(),
                 'retval': stdout.channel.recv_exit_status()}
 
+
 def log(message, debug=False):
 
-    print (message)
+    print ("\n" + message + "\n")
