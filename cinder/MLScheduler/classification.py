@@ -27,8 +27,9 @@ class Classification:
 
     @staticmethod
     def get_current_or_initialize(training_dataset_size, violation_iops_classes, training_experiment_id):
-
+        pdb.set_trace()
         if Classification.current_classification is None:
+
             clf = Classification(
                 classifier_name="tree",
                 violation_iops_classes=violation_iops_classes,
@@ -89,7 +90,14 @@ class Classification:
         return cut1, cut2, feature_names
 
     def create_models(self, training_dataset_size):
-        if communication.Communication.get_config("is_training") is True:
+
+        is_training = communication.Communication.get_config("is_training")
+
+        tools.log("INFO [create_models] IS_TRAINING is %s" % is_training)
+
+        pdb.set_trace()
+
+        if is_training is True:
             return None
 
         training_data = communication.get_training_dataset(
@@ -208,7 +216,9 @@ class Classification:
     def predict(self, volume_request_id):
 
         classifier_predictions = {}
-        values = {}
+        backend_stat_current = {}
+
+        pdb.set_trace()
 
         if communication.Communication.get_config("is_training") is True:
             return None
@@ -227,7 +237,7 @@ class Classification:
         for backend_weight in weights[1:]:
             row = backend_weight[0]
 
-            values[row["cinder_id"]] = [[
+            backend_stat_current[row["cinder_id"]] = [[
                 clock,
                 row["live_volume_count_during_clock"] + 1,
                 row["requested_write_iops_total"] + volume_request["write_iops"],
@@ -236,13 +246,13 @@ class Classification:
 
         for cinder_id in self.classifiers_for_read_iops.keys():
 
-            if cinder_id not in values:
+            if cinder_id not in backend_stat_current:
                 continue
 
             read_classifier = self.classifiers_for_read_iops[cinder_id]["classifier"]
             write_classifier = self.classifiers_for_write_iops[cinder_id]["classifier"]
 
-            values_array = values[cinder_id]
+            values_array = backend_stat_current[cinder_id]
 
             classifier_predictions[cinder_id] = {
                 "read_violation": {

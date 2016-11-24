@@ -202,23 +202,20 @@ if __name__ == '__main__':
                         """
                         )
 
-    parser.add_argument('--new', default=False, metavar='', type=bool,
-                        required=False,
-                        help='Create new experiment otherwise the last created experiment will be used.')
-
-    parser.add_argument('--debug_run_only_one_server', default=False, metavar='', type=bool,
-                        required=False,
-                        help='Only run one server for debug purposes.')
-
-    parser.add_argument('--training_experiment_id', default=0, metavar='', type=long, required=False,
-                        help='if set 0 it will use the default scheduler. Other wise will use the given id to generate training dataset and create classification model to perform iops prediction.')
-
-    parser.add_argument('--command', metavar='', type=str,
-                        required=False,
+    parser.add_argument('--command', metavar='', type=str, required=False,
                         help='Command that needs to be executed.')
+
+    parser.add_argument('--training_experiment_id', default=0, metavar='', type=int, required=False,
+                        help='if set 0 it will use the default scheduler. Other wise will use the given id to generate training dataset and create classification model to perform iops prediction.')
 
     parser.add_argument("--max_number_volumes", default="[[6], [1.0]]", metavar='', type=str, required=False,
                         help='max number of volumes each worklaod generator creates. example:[[500, 750, 1000], [0.5, 0.3, 0.2]]. will be fed to numpy.random.choice')
+
+    parser.add_argument('--debug_run_only_one_server', default=False, action="store_true",
+                        help='Only run one server for debug purposes.')
+
+    parser.add_argument('--new', default=False, action="store_true",
+                        help='Create new experiment otherwise the last created experiment will be used.')
 
     args = parser.parse_args()
 
@@ -236,6 +233,9 @@ if __name__ == '__main__':
 
     if "create-experiment" in args.commands:
         args.new = True
+
+    if args.debug_run_only_one_server:
+        args.commands.remove("init")
 
     workload_args = {
         "--fio_test_name": "workload_generator.fio",
@@ -257,6 +257,7 @@ if __name__ == '__main__':
     }
 
     if "del-avail-err" in args.commands:
+        tools.log("CAUSONG ERROR WHILE RUNNING THE SCHEDULER.MIGHT NEED TO REMOVE")
         tools.delete_volumes_available_error()
 
         sys.exit()
@@ -267,10 +268,10 @@ if __name__ == '__main__':
 
     e = Experiment(
         debug_server_ip='10.18.75.182',
+        debug_run_only_one_server=args.debug_run_only_one_server,
         add_new_experiment=args.new,
         print_output_if_have_error=True,
         print_output=True,
-        debug_run_only_one_server=args.debug_run_only_one_server,
         config=json.dumps({
 "training_experiment_id": args.training_experiment_id,
 "is_training": is_training,
