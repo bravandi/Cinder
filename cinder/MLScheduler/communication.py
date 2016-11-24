@@ -1,6 +1,6 @@
 import os
 import requests
-import logging
+import log_tools
 import urllib
 from datetime import datetime
 import json
@@ -59,7 +59,7 @@ class Communication:
         try:
             ex = requests.get(Communication.__server_url + "get_current_experiment")
         except Exception as err:
-            logging.log("CANNOT CONNECT TO SERVER_HANDLER to get the CURRENT EXPERIMENT")
+            log_tools.log("CANNOT CONNECT TO SERVER_HANDLER to get the CURRENT EXPERIMENT")
             return None
 
         try:
@@ -67,7 +67,7 @@ class Communication:
 
             ex["config"] = json.loads(ex["config"])
         except Exception as err:
-            logging.log("ERROR [get_current_experiment] cannot load the experiment 'config'")
+            log_tools.log("ERROR [get_current_experiment] cannot load the experiment 'config'")
             return None
 
         Communication._current_experiment = ex
