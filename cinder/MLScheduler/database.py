@@ -195,12 +195,14 @@ def __execute_insert_procedure(name, args):
 def delete_volume(
         id,  # VARCHAR(36),
         cinder_id,  # VARCHAR(36),
+        is_deleted,
         delete_clock,  # INT(11),
         delete_time  # INT(11),
 ):
     args = (
         id,
         cinder_id,
+        is_deleted,
         delete_clock,
         delete_time
     )

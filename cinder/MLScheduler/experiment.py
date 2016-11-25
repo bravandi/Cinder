@@ -442,15 +442,15 @@ if __name__ == '__main__':
     if "performance" in args.commands:
         e.start_performance_evaluators(performance_args)
 
-    if "kill-performance" in args.commands:
-        e.kill_performance_evaluators()
-
     if "kill-workload" in args.commands:
         e.kill_workload_generator_all_servers()
 
         # sleep 4 to make sure all the processes are dead are not going to create new volumes!
         if "det-del" in args.commands:
-            time.sleep(4)
+            time.sleep(3)
+
+    if "kill-performance" in args.commands:
+        e.kill_performance_evaluators()
 
     if "det-del" in args.commands:
         e.detach_delete_all_servers_volumes()

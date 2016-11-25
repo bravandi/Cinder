@@ -138,9 +138,11 @@ class Handler(BaseHTTPRequestHandler):
             return weights
 
         if path == "/delete_volume":
+
             return database.delete_volume(
                 id=long(parameters["id"].value),
                 cinder_id=parameters["cinder_id"].value,
+                is_deleted=long(parameters["is_deleted"].value),
                 delete_clock=long(parameters["delete_clock"].value),
                 delete_time=parameters["delete_time"].value
             )
