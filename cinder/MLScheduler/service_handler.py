@@ -97,8 +97,9 @@ class Handler(BaseHTTPRequestHandler):
 
             classifier = classification.Classification.get_current_or_initialize(
                 training_dataset_size=communication.Communication.get_current_experiment()["config"]["training_dataset_size"],
-                violation_iops_classes=["v1", "v2", "v3", "v4"],
-                training_experiment_id=communication.Communication.get_current_experiment()["config"]["training_experiment_id"]
+                violation_iops_classes={"v1": 0, "v2": 1, "v3": 2, "v4": 3}, # put the index of class in the array
+                training_experiment_id=communication.Communication.get_current_experiment()["config"]["training_experiment_id"],
+                read_is_priority=communication.Communication.get_current_experiment()["config"]["read_is_priority"]
             )
 
             prediction = classifier.predict(
@@ -149,6 +150,26 @@ class Handler(BaseHTTPRequestHandler):
                 experiment_id=long(parameters["experiment_id"].value),
                 volume_request_id=long(parameters["volume_request_id"].value),
                 response_id=long(parameters["response_id"].value),
+                create_clock=long(parameters["create_clock"].value),
+                create_time=parameters["create_time"].value
+            )
+
+        if path == "/insert_backend":
+            description = ''
+            if parameters.has_key("description"):
+                description = parameters["description"].value
+
+            ML_model_Path = ''
+            if parameters.has_key("ml_model_Path"):
+                ML_model_Path = parameters["ml_model_Path"].value
+
+            return database.insert_backend(
+                cinder_id=parameters["cinder_id"].value,
+                experiment_id=long(parameters["experiment_id"].value),
+                capacity=int(parameters["capacity"].value),
+                is_online=bool(parameters["is_online"].value),
+                description=description,
+                ml_model_Path=ML_model_Path,
                 create_clock=long(parameters["create_clock"].value),
                 create_time=parameters["create_time"].value
             )

@@ -1,3 +1,4 @@
+import os
 import tools
 import communication
 import numpy as np
@@ -26,14 +27,17 @@ class Classification:
         self.create_time = datetime.now()
 
     @staticmethod
-    def get_current_or_initialize(training_dataset_size, violation_iops_classes, training_experiment_id):
-        pdb.set_trace()
+    def get_current_or_initialize(
+            training_dataset_size,
+            violation_iops_classes,
+            training_experiment_id,
+            read_is_priority):
+        # pdb.set_trace()
         if Classification.current_classification is None:
-
             clf = Classification(
                 classifier_name="tree",
                 violation_iops_classes=violation_iops_classes,
-                read_is_priority=True,
+                read_is_priority=read_is_priority,
                 training_experiment_id=training_experiment_id
             )
 
@@ -95,7 +99,7 @@ class Classification:
 
         tools.log("INFO [create_models] IS_TRAINING is %s" % is_training)
 
-        pdb.set_trace()
+        # pdb.set_trace()
 
         if is_training is True:
             return None
@@ -200,59 +204,63 @@ class Classification:
 
     def _include_classes_with_zero_probability(self, classifier, prediction):
 
-        classes = {}
+        discretized_classes = {}
 
-        for cls in self.violation_iops_classes:
-            classes[cls] = 0.0
+        for discretized_class in self.violation_iops_classes.keys():
+            discretized_classes[discretized_class] = 0.0
 
-        classes_from_clf = list(classifier.classes_)
+        classes_from_classifier_alg = list(classifier.classes_)
 
-        for cls in classes.keys():
-            if cls in classes_from_clf:
-                classes[cls] = round(prediction[classes_from_clf.index(cls)], 5)
+        for discretized_class in discretized_classes.keys():
+            if discretized_class in classes_from_classifier_alg:
+                discretized_classes[discretized_class] = round(
+                    prediction[classes_from_classifier_alg.index(discretized_class)], 5)
 
-        return classes
+        return discretized_classes
 
     def predict(self, volume_request_id):
+        debug_dump = "Prediction - %s\n" % str(datetime.now())
 
         classifier_predictions = {}
-        backend_stat_current = {}
-
-        pdb.set_trace()
+        backends_to_be_weight_if_accept_request = {}
 
         if communication.Communication.get_config("is_training") is True:
             return None
 
-        weights = communication.get_backends_weights(
+        backends_current_weights = communication.get_backends_weights(
             experiment_id=communication.Communication.get_current_experiment()["id"],
             volume_request_id=volume_request_id)
 
         # there were no records for training or prediction. Probably its a trainng experiment
-        if len(weights) == 1 or len(self.classifiers_for_read_iops) == 0 or len(self.classifiers_for_write_iops) == 0:
+        if len(self.classifiers_for_read_iops) == 0 or len(self.classifiers_for_write_iops) == 0:
             return None
 
-        volume_request = weights[0][0]
+        volume_request = backends_current_weights[0][0]
         clock = communication.get_volume_performance_meter_clock_calc(datetime.now())
 
-        for backend_weight in weights[1:]:
+        debug_dump = "%s##volume_request:%s\n" % (debug_dump, str(volume_request))
+
+        for backend_weight in backends_current_weights[1:]:
             row = backend_weight[0]
 
-            backend_stat_current[row["cinder_id"]] = [[
+            backends_to_be_weight_if_accept_request[row["cinder_id"]] = [[
                 clock,
                 row["live_volume_count_during_clock"] + 1,
                 row["requested_write_iops_total"] + volume_request["write_iops"],
                 row["requested_read_iops_total"] + volume_request["read_iops"]
             ]]
 
+        debug_dump = "%s##backends_current_weights:%s\n" % (debug_dump, str(backends_to_be_weight_if_accept_request))
+
         for cinder_id in self.classifiers_for_read_iops.keys():
 
-            if cinder_id not in backend_stat_current:
+            if cinder_id not in backends_to_be_weight_if_accept_request:
                 continue
 
             read_classifier = self.classifiers_for_read_iops[cinder_id]["classifier"]
             write_classifier = self.classifiers_for_write_iops[cinder_id]["classifier"]
 
-            values_array = backend_stat_current[cinder_id]
+            values_array = backends_to_be_weight_if_accept_request[cinder_id]
 
             classifier_predictions[cinder_id] = {
                 "read_violation": {
@@ -269,48 +277,64 @@ class Classification:
                 }
             }
 
-        read_candidates = {}
-        write_candidates = {}
+        debug_dump = "%s##classifier_predictions:%s\n" % (debug_dump, str(classifier_predictions))
+
+        read_candidates = []
+        write_candidates = []
 
         # calculate predictions
         for cinder_id, predictions in classifier_predictions.iteritems():
 
             for read_or_write_iops, prediction in predictions.iteritems():
-                prob = np.array(prediction["prob"].values())
 
                 if read_or_write_iops == "read_violation":
-                    w = np.array([4, 3, 2, 1])
+                    self.pick_for_read(cinder_id=cinder_id, prediction=prediction, candidate_list=read_candidates)
 
                 if read_or_write_iops == "write_violation":
-                    w = np.array([4, 3, 2, 1])
+                    self.pick_for_write(cinder_id=cinder_id, prediction=prediction, candidate_list=write_candidates)
 
-                val = prob * w
-                best_index = val.argmax()
-                prediction["recommendation"] = {self.violation_iops_classes[val.argmax()]: prob[best_index]}
+        # pdb.set_trace()
+        # max_value_write = max([value.values()[0] for key, value in write_candidates.iteritems()])
+        # write_final_candidates = [key for key, value in write_candidates.iteritems()
+        #                           if value.values()[0] == max_value_write]
 
-                if read_or_write_iops == "read_violation":
-                    read_candidates[cinder_id] = prediction["recommendation"]
+        final_result = np.intersect1d(read_candidates, write_candidates).tolist()
 
-                if read_or_write_iops == "write_violation":
-                    write_candidates[cinder_id] = prediction["recommendation"]
+        debug_dump = "%s##final_result:%s\n------------------------------------------------------------------" % (
+            debug_dump, str(final_result))
 
-        max_value_read = max([value.values()[0] for key, value in read_candidates.iteritems()])
-        read_final_candidates = [key for key, value in read_candidates.iteritems()
-                                 if value.values()[0] == max_value_read]
+        filename = "/root/predictions_%s.txt" % str(communication.Communication.get_current_experiment()["id"])
+        if os.path.exists(filename) is False:
+            open(filename, 'w+').close()
+        with open(filename, "a") as myfile:
+            myfile.write(debug_dump)
+        myfile.close()
 
-        max_value_write = max([value.values()[0] for key, value in write_candidates.iteritems()])
-        write_final_candidates = [key for key, value in write_candidates.iteritems()
-                                  if value.values()[0] == max_value_write]
-
-        final_result = np.intersect1d(read_final_candidates, write_final_candidates).tolist()
+        # pdb.set_trace()
 
         if len(final_result) == 0:
             if self.read_is_priority:
-                final_result = read_final_candidates
+                final_result = read_candidates
             else:
-                final_result = write_final_candidates
+                final_result = write_candidates
 
         return final_result
+
+    def pick_for_read(self, cinder_id, prediction, candidate_list):
+
+        prob = prediction["prob"].values()
+
+        if prob[self.violation_iops_classes["v1"]] >= 0.5:
+                        # prob[self.violation_iops_classes["v2"]] > 0.9:
+            candidate_list.append(cinder_id)
+
+    def pick_for_write(self, cinder_id, prediction, candidate_list):
+
+        prob = prediction["prob"].values()
+
+        if prob[self.violation_iops_classes["v1"]] >= 0.5:
+                        # prob[self.violation_iops_classes["v2"]] > 0.9:
+            candidate_list.append(cinder_id)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import argparse
+from cmath import exp
 import tools
 import os
 import communication
@@ -7,6 +8,7 @@ import json
 import sys
 import json
 import pdb
+import numpy as np
 
 
 class Experiment:
@@ -23,11 +25,18 @@ class Experiment:
 
         if add_new_experiment:
 
-            communication.insert_experiment(
+            ex_id = communication.insert_experiment(
                 comment='',
                 scheduler_algorithm='',
                 config=config
             )
+
+            for backend_name in tools.get_cinder_backends():
+                communication.insert_backend(
+                    experiment_id=ex_id,
+                    cinder_id=backend_name,
+                    capacity=100,
+                )
 
             tools.log("Create new experiment.")
 
@@ -38,7 +47,7 @@ class Experiment:
 
         nova = tools.get_nova_client()
         for server in nova.servers.list():
-            # pdb.set_trace()
+
             if server.status != 'ACTIVE':
                 continue
 
@@ -48,12 +57,10 @@ class Experiment:
                 if self.debug_run_only_one_server:
 
                     if server_ip != self.debug_server_ip:
-
                         continue
                 else:
                     if server_ip == debug_server_ip:
                         continue
-
 
                 tools.log("Connecting via ssh to %s" % (server_ip))
 
@@ -125,14 +132,21 @@ class Experiment:
 
     def start_workload_generators(self, arguments):
 
+        max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
+        val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
+
+        arguments["--max_number_volumes"] = '"[[1], [1.0]]"'
+
         args = []
         for k, v in arguments.iteritems():
             args.append(str(k))
             args.append(str(v))
 
-        self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &" % (
-                " ".join(args)))
+        for i in range(val):
+            self._run_command_on_all_servers(
+                "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload_%s.out 2>~/workload_%s.err &" % (
+                    " ".join(args), str(i), str(i))
+            )
 
     def start_performance_evaluators(self, arguments):
 
@@ -217,10 +231,16 @@ if __name__ == '__main__':
     parser.add_argument('--new', default=False, action="store_true",
                         help='Create new experiment otherwise the last created experiment will be used.')
 
+    parser.add_argument('--read_is_priority', default=False, action="store_true",
+                        help='Create new experiment otherwise the last created experiment will be used.')
+
     args = parser.parse_args()
+
+    args.debug_server_ip = '10.18.75.182'
 
     if "shutdown" in args.commands:
         args.commands = ["kill-workload", "kill-performance", "det-del"]
+        args.debug_server_ip = ''
         args.new = False
 
     if "start" in args.commands:
@@ -240,19 +260,20 @@ if __name__ == '__main__':
     workload_args = {
         "--fio_test_name": "workload_generator.fio",
 
-        "--request_read_iops": json.dumps("[[500, 750, 1000], [0.5, 0.3, 0.2]]"),
-        "--request_write_iops": json.dumps("[[300, 400, 400], [0.5, 0.3, 0.2]]"),
-        '--delay_between_workload_generation': json.dumps("[[5], [1.0]]"), #it was 8 on exp[1]
-        "--max_number_volumes": json.dumps(args.max_number_volumes),
-        "--volume_life_seconds": json.dumps("[[500], [1.0]]"),
-        "--volume_size": json.dumps("[[9], [1.0]]")
+        "--wait_after_volume_rejected": json.dumps("[[30], [1.0]]"),
+        "--request_read_iops": json.dumps("[[600, 850, 1100], [0.3, 0.4, 0.3]]"),
+        "--request_write_iops": json.dumps("[[400, 500, 600], [0.3, 0.4, 0.3]]"),
+        '--delay_between_workload_generation': json.dumps("[[2], [1.0]]"),  # it was 8 on exp[1]
+        "--max_number_volumes": json.dumps('[[10], [1.0]]'),  # json.dumps('[[1], [1.0]]'args.max_number_volumes),
+        "--volume_life_seconds": json.dumps("[[40], [1.0]]"),
+        "--volume_size": json.dumps("[[5], [1.0]]")
     }
 
     performance_args = {
         "--fio_test_name": "resource_evaluation.fio",
-        "--terminate_if_takes": 125, #175
-        "--restart_gap": 15, #25
-        "--restart_gap_after_terminate": 50,
+        "--terminate_if_takes": 25,  # 175
+        "--restart_gap": 4,  # 25
+        "--restart_gap_after_terminate": 8,
         "--show_fio_output": False,
     }
 
@@ -267,33 +288,21 @@ if __name__ == '__main__':
         is_training = False
 
     e = Experiment(
-        debug_server_ip='10.18.75.182',
+        debug_server_ip=args.debug_server_ip,
         debug_run_only_one_server=args.debug_run_only_one_server,
         add_new_experiment=args.new,
         print_output_if_have_error=True,
         print_output=True,
         config=json.dumps({
-"training_experiment_id": args.training_experiment_id,
-"is_training": is_training,
-"workload_args": workload_args,
-"performance_args": performance_args,
-"mod_normalized_clock_for_feature_generation": 180,
-"training_dataset_size": 2000,
-"volume_clock_calc":
-"""
-def volume_clock_calc(t):
-    return t.strftime("%s")
-""",
-"volume_performance_meter_clock_calc":
-"""
-def volume_performance_meter_clock_calc(t):
-    if(t.second > 30):
-        t = t.replace(second=30)
-    else:
-        t = t.replace(second=0)
-    t = t.replace(microsecond=0)
-    return t.strftime("%s")
-"""
+            "training_experiment_id": args.training_experiment_id,
+            "read_is_priority": True,  # args.read_is_priority,
+            "is_training": is_training,
+            "workload_args": workload_args,
+            "performance_args": performance_args,
+            "mod_normalized_clock_for_feature_generation": 180,
+            "training_dataset_size": 2000,
+            "volume_clock_calc": tools.read_file("script_volume_clock_calc"),
+            "volume_performance_meter_clock_calc": tools.read_file("script_volume_performance_meter_clock_calc")
         })
     )
 

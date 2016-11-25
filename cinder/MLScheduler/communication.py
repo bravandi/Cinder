@@ -101,6 +101,35 @@ def insert_volume(
     return _parse_response(requests.post(__server_url + "insert_volume", data=data))
 
 
+def insert_backend(
+        cinder_id,
+        experiment_id,
+        capacity,
+        is_online=1,
+        Description='',
+        ML_model_Path='',
+        create_clock=0,
+        create_time=None):
+
+    if create_time is None:
+        create_time = datetime.now()
+
+    create_clock = volume_clock_calc(create_time)
+
+    data = {
+        "cinder_id": cinder_id,
+        "experiment_id": experiment_id,
+        "capacity": capacity,
+        "is_online": is_online,
+        "Description": Description,
+        "ML_model_Path": ML_model_Path,
+        "create_clock": create_clock,
+        "create_time": create_time
+    }
+
+    return _parse_response(requests.post(__server_url + "insert_backend", data=data))
+
+
 def insert_experiment(
         comment,
         scheduler_algorithm,
@@ -226,7 +255,14 @@ def _parse_response(response):
 
 if __name__ == "__main__":
     # print get_backends_weights(get_current_experiment()["id"], 2333)
-    print get_prediction(
-        volume_request_id=2352
+    # print get_prediction(
+    #     volume_request_id=2352
+    # )
+
+    print insert_backend(
+        cinder_id="test",
+        experiment_id=33,
+        capacity=100
     )
+
     pass

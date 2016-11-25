@@ -242,6 +242,30 @@ def insert_schedule_response(
     return __execute_insert_procedure("insert_schedule_response", args)
 
 
+def insert_backend(
+        cinder_id,  # VARCHAR(36),
+        experiment_id,  # bigint,
+        capacity,  # INT(11),
+        is_online, # bool
+        description, # MEDIUMTEXT
+        ml_model_Path, # VARCHAR(1000)
+        create_clock,  # INT(11),
+        create_time  # DATETIME
+):
+    args = (
+        cinder_id,  # VARCHAR(36),
+        experiment_id,  # VARCHAR(36),
+        capacity,  # INT(11),
+        is_online,
+        description,
+        ml_model_Path,
+        create_clock,  # INT(11),
+        create_time  # DATETIME
+    )
+
+    return __execute_insert_procedure("insert_backend", args)
+
+
 def insert_volume(
         experiment_id,  # bigint
         cinder_id,  # VARCHAR(36)

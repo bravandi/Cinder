@@ -1,6 +1,7 @@
 import paramiko
 from StringIO import StringIO
 import pdb
+import os
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from novaclient import client as n_client
@@ -86,6 +87,28 @@ class SshClient:
                 'retval': stdout.channel.recv_exit_status()}
 
 
+def read_file(path):
+    with open(os.path.realpath(path), 'r') as myfile:
+        data = myfile.read()
+
+    myfile.close()
+    return data
+
+
+def get_cinder_backends():
+    cinder = get_cinder_client()
+
+    result = []
+
+    for backend in cinder.pools.list():
+        result.append(backend.name)
+
+    return result
+
 def log(message, debug=False):
 
     print ("\n" + message + "\n")
+
+if __name__ == '__main__':
+
+    pass
