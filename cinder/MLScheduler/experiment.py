@@ -59,7 +59,7 @@ class Experiment:
                     if server_ip != self.debug_server_ip:
                         continue
                 else:
-                    if server_ip == debug_server_ip:
+                    if server_ip == self.debug_server_ip:
                         continue
 
                 tools.log("Connecting via ssh to %s" % (server_ip))
@@ -143,6 +143,7 @@ class Experiment:
             args.append(str(v))
 
         for i in range(val):
+
             self._run_command_on_all_servers(
                 "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload_%s.out 2>~/workload_%s.err &" % (
                     " ".join(args), str(i), str(i))
@@ -168,6 +169,7 @@ class Experiment:
             "ps -ef | grep workload_generator | grep -v grep | awk '{print $2}' | xargs sudo kill -9")
 
     def _run_command_on_all_servers(self, command):
+
         for server in self.servers:
             self._run_command(server, command)
 
@@ -197,36 +199,63 @@ class Experiment:
         return client
 
 
-def args_load(args):
-    args.performance_fio_test_name = "resource_evaluation.fio"
-    args.performance_terminate_if_takes = 25
-    args.performance_restart_gap = 25
-    args.performance_restart_gap_after_terminate = 8
-    args.performance_show_fio_output = False
+def args_load_defaults(args):
+    args.debug_run_only_one_server = tools.str2bool(args.debug_run_only_one_server)
+    args.print_output_if_have_error = tools.str2bool(args.print_output_if_have_error)
+    args.print_output = tools.str2bool(args.print_output)
+    args.new = tools.str2bool(args.new)
+    args.read_is_priority = tools.str2bool(args.read_is_priority)
+    args.performance_show_fio_output = tools.str2bool(args.performance_show_fio_output)
 
-    args.workload_fio_test_name = "workload_generator.fio"
-    args.workload_wait_after_volume_rejected = "[[30], [1.0]]"
-    args.workload_request_read_iops = "[[600, 850, 1100], [0.3, 0.4, 0.3]]"
-    args.workload_request_write_iops = "[[400, 500, 600], [0.3, 0.4, 0.3]]"
-    args.workload_delay_between_workload_generation = "[[2], [1.0]]"
-    args.workload_max_number_volumes = "[[6], [1.0]]"
-    args.workload_volume_life_seconds = "[[40], [1.0]]"
-    args.workload_volume_size = "[[5], [1.0]]"
+    if args.debug_run_only_one_server:
+        if args.debug_server_ip is None:
+            args.debug_server_ip = "10.18.75.182"
 
-    args.debug_server_ip = '10.18.75.182'
+    if args.performance_fio_test_name is None:
+        args.performance_fio_test_name = "resource_evaluation.fio"
+    if args.performance_terminate_if_takes is None:
+        args.performance_terminate_if_takes = 25
+    if args.performance_restart_gap is None:
+        args.performance_restart_gap = 25
+    if args.performance_restart_gap_after_terminate is None:
+        args.performance_restart_gap_after_terminate = 8
+    # args.read_is_priority
+    # args.performance_show_fio_output
+
+    if args.workload_fio_test_name is None:
+        args.workload_fio_test_name = "workload_generator.fio"
+    if args.workload_wait_after_volume_rejected is None:
+        args.workload_wait_after_volume_rejected = "[[30], [1.0]]"
+    if args.workload_request_read_iops is None:
+        args.workload_request_read_iops = "[[600, 850, 1100], [0.3, 0.4, 0.3]]"
+    if args.workload_request_write_iops is None:
+        args.workload_request_write_iops = "[[400, 500, 600], [0.3, 0.4, 0.3]]"
+    if args.workload_delay_between_workload_generation is None:
+        args.workload_delay_between_workload_generation = "[[2], [1.0]]"
+    if args.workload_max_number_volumes is None:
+        args.workload_max_number_volumes = "[[6], [1.0]]"
+    if args.workload_volume_life_seconds is None:
+        args.workload_volume_life_seconds = "[[40], [1.0]]"
+    if args.workload_volume_size is None:
+        args.workload_volume_size = "[[5], [1.0]]"
+
+    # args.debug_run_only_one_server
     # args.debug_run_only_one_server
     # args.new
-    args.print_output_if_have_error = True
-    args.print_output = True
+
+    # args.print_output_if_have_error
+    # args.print_output
     # args.training_experiment_id
-    args.read_is_priority = True
+    # performance_show_fio_output
     # is_training
     # workload_args
     # performance_args
-    args.mod_normalized_clock_for_feature_generation = 180
-    args.training_dataset_size = 200
-    # volume_clock_calc
-    # volume_performance_meter_clock_calc
+    if args.mod_normalized_clock_for_feature_generation is None:
+        args.mod_normalized_clock_for_feature_generation = 180
+    if args.training_dataset_size is None:
+        args.training_dataset_size = 200
+        # volume_clock_calc
+        # volume_performance_meter_clock_calc
 
 
 if __name__ == '__main__':
@@ -253,37 +282,46 @@ if __name__ == '__main__':
     parser.add_argument('--training_experiment_id', default=0, metavar='', type=int, required=False,
                         help='if set 0 it will use the default scheduler. Other wise will use the given id to generate training dataset and create classification model to perform iops prediction. default=0')
 
-    parser.add_argument('--debug_run_only_one_server', default=False, action="store_true",
+    parser.add_argument('--debug_run_only_one_server', default='False', metavar='', type=str,
                         help='Only run one server for debug purposes. default=False')
 
-    parser.add_argument('--new', default=False, action="store_true",
+    parser.add_argument('--print_output_if_have_error', default='True', metavar='', type=str,
+                        help='print output if there is an error in execute command on the hosts. default=False')
+
+    parser.add_argument('--print_output', default='True', metavar='', type=str,
+                        help='print output if there is an error in execute command on the hosts. default=False')
+
+    parser.add_argument('--new', default='False', metavar='', type=str,
                         help='Create new experiment otherwise the last created experiment will be used. default=False')
 
-    parser.add_argument('--read_is_priority', default=False, action="store_true",
+    parser.add_argument('--read_is_priority', default='True', metavar='', type=str,
                         help='Create new experiment otherwise the last created experiment will be used. default=False.')
 
-    parser.add_argument('--mod_normalized_clock_for_feature_generation', default=180, metavar='', type=int,
+    parser.add_argument('--mod_normalized_clock_for_feature_generation', default=None, metavar='', type=int,
                         required=False,
-                        help='mod the clock ... default=180')
+                        help='mod the clock ... example=180')
 
-    parser.add_argument('--training_dataset_size', default=1000, metavar='', type=int, required=False,
-                        help='training dataset size. default=1000')
+    parser.add_argument('--training_dataset_size', default=None, metavar='', type=int, required=False,
+                        help='training dataset size. example=1000')
+
+    parser.add_argument('--debug_server_ip', default=None, metavar='', type=str, required=False,
+                        help='for debug only use this server')
 
     # PERFORMANCE CONFIGURATION
     parser.add_argument("--performance_fio_test_name", default="resource_evaluation.fio", metavar='', type=str,
                         required=False,
                         help='Performance Eval: the fio test will be used for performance evaluation. default="resource_evaluation.fio"')
 
-    parser.add_argument('--performance_terminate_if_takes', default=25, metavar='', type=int, required=False,
-                        help='Performance Eval: terminate performance eval process if takes more than xx seconds. default=25')
+    parser.add_argument('--performance_terminate_if_takes', default=None, metavar='', type=int, required=False,
+                        help='Performance Eval: terminate performance eval process if takes more than xx seconds. example=25')
 
-    parser.add_argument('--performance_restart_gap', default=4, metavar='', type=int, required=False,
-                        help='Performance Eval: do Performance Evaluation proccess each xx seconds. default=4')
+    parser.add_argument('--performance_restart_gap', default=None, metavar='', type=int, required=False,
+                        help='Performance Eval: do Performance Evaluation proccess each xx seconds. example=4')
 
-    parser.add_argument('--performance_restart_gap_after_terminate', default=4, metavar='', type=int, required=False,
-                        help='Performance Eval: if performance evaluation failed, wait xx seconds the restart. default=4')
+    parser.add_argument('--performance_restart_gap_after_terminate', default=None, metavar='', type=int, required=False,
+                        help='Performance Eval: if performance evaluation failed, wait xx seconds the restart. example=4')
 
-    parser.add_argument('--performance_show_fio_output', default=False, action="store_true",
+    parser.add_argument('--performance_show_fio_output', default='False', metavar='', type=str,
                         help='Performance Eval: print fio output. default=False')
     # END PERFORMANCE CONFIGURATION
 
@@ -293,39 +331,39 @@ if __name__ == '__main__':
                         required=False,
                         help='Workload: fio test to generate workload. default="workload_generator.fio"')
 
-    parser.add_argument("--workload_wait_after_volume_rejected", default="[[30], [1.0]]", metavar='', type=str,
+    parser.add_argument("--workload_wait_after_volume_rejected", default=None, metavar='', type=str,
                         required=False,
-                        help='if a volume request is rejected, wait for xx seconds. default="[[30], [1.0]]"')
+                        help='if a volume request is rejected, wait for xx seconds. example="[[30], [1.0]]"')
 
-    parser.add_argument("--workload_request_read_iops", default="[[600, 850, 1100], [0.3, 0.4, 0.3]]", metavar='',
+    parser.add_argument("--workload_request_read_iops", default=None, metavar='',
                         type=str, required=False,
-                        help='request iops read random list. default="[[600, 850, 1100], [0.3, 0.4, 0.3]]"')
+                        help='request iops read random list. example="[[600, 850, 1100], [0.3, 0.4, 0.3]]"')
 
-    parser.add_argument("--workload_request_write_iops", default="[[400, 500, 600], [0.3, 0.4, 0.3]]", metavar='',
+    parser.add_argument("--workload_request_write_iops", default=None, metavar='',
                         type=str, required=False,
-                        help='request iops write random list. default="[[400, 500, 600], [0.3, 0.4, 0.3]]"')
+                        help='request iops write random list. example="[[400, 500, 600], [0.3, 0.4, 0.3]]"')
 
-    parser.add_argument("--workload_delay_between_workload_generation", default="[[2], [1.0]]", metavar='',
+    parser.add_argument("--workload_delay_between_workload_generation", default=None, metavar='',
                         type=str, required=False,
-                        help='wait xx seconds between generating workloads. default="[[2], [1.0]]"')
+                        help='wait xx seconds between generating workloads. example="[[2], [1.0]]"')
 
-    parser.add_argument("--workload_max_number_volumes", default="[[6], [1.0]]", metavar='',
+    parser.add_argument("--workload_max_number_volumes", default=None, metavar='',
                         type=str, required=False,
-                        help='max number of vilumes to be created. default="[[6], [1.0]]"')
+                        help='max number of vilumes to be created. example="[[6], [1.0]]"')
 
-    parser.add_argument("--workload_volume_life_seconds", default="[[40], [1.0]]", metavar='',
+    parser.add_argument("--workload_volume_life_seconds", default=None, metavar='',
                         type=str, required=False,
-                        help='life time of a volume. default="[[40], [1.0]]"')
+                        help='life time of a volume. example="[[40], [1.0]]"')
 
-    parser.add_argument("--workload_volume_size", default="[[5], [1.0]]", metavar='',
+    parser.add_argument("--workload_volume_size", default=None, metavar='',
                         type=str, required=False,
-                        help='life time of a volume. default= "[[5], [1.0]]"')
+                        help='life time of a volume. example= "[[5], [1.0]]"')
 
     # END WORKLOAD GENERATOR
 
     args = parser.parse_args()
 
-    args_load(args)
+    args_load_defaults(args)
 
     if "shutdown" in args.commands:
         args.commands = ["kill-workload", "kill-performance", "det-del"]

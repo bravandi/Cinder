@@ -19,7 +19,6 @@ def get_session():
                        project_domain_name='default'
                        )
 
-
     sess = session.Session(auth=auth, verify='/path/to/ca.cert')
 
     return sess
@@ -105,9 +104,15 @@ def get_cinder_backends():
 
     return result
 
+
 def log(message, debug=False):
 
     print ("\n" + message + "\n")
+
+
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
+
 
 if __name__ == '__main__':
 
