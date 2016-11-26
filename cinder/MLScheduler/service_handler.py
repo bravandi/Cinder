@@ -94,11 +94,12 @@ class Handler(BaseHTTPRequestHandler):
         # tools.log("_handle_request: %s" % (path), debug=True)
 
         if path == "/get_prediction":
-
             classifier = classification.Classification.get_current_or_initialize(
-                training_dataset_size=communication.Communication.get_current_experiment()["config"]["training_dataset_size"],
-                violation_iops_classes={"v1": 0, "v2": 1, "v3": 2, "v4": 3}, # put the index of class in the array
-                training_experiment_id=communication.Communication.get_current_experiment()["config"]["training_experiment_id"],
+                training_dataset_size=communication.Communication.get_current_experiment()["config"][
+                    "training_dataset_size"],
+                violation_iops_classes={"v1": 0, "v2": 1, "v3": 2, "v4": 3},  # put the index of class in the array
+                training_experiment_id=communication.Communication.get_current_experiment()["config"][
+                    "training_experiment_id"],
                 read_is_priority=communication.Communication.get_current_experiment()["config"]["read_is_priority"]
             )
 
@@ -138,7 +139,6 @@ class Handler(BaseHTTPRequestHandler):
             return weights
 
         if path == "/delete_volume":
-
             return database.delete_volume(
                 id=long(parameters["id"].value),
                 cinder_id=parameters["cinder_id"].value,
@@ -226,6 +226,43 @@ class Handler(BaseHTTPRequestHandler):
                 create_time=parameters["create_time"].value
             )
 
+        if path == "/insert_log":
+
+            type = ''
+            if parameters.has_key("type"):
+                type = parameters["type"].value
+
+            code = ''
+            if parameters.has_key("code"):
+                code = parameters["code"].value
+
+            file_name = ''
+            if parameters.has_key("file_name"):
+                file_name = parameters["file_name"].value
+
+            function_name = ''
+            if parameters.has_key("function_name"):
+                function_name = parameters["function_name"].value
+
+            message = ''
+            if parameters.has_key("message"):
+                message = parameters["message"].value
+
+            exception_message = ''
+            if parameters.has_key("exception_message"):
+                exception_message = parameters["exception_message"].value
+
+            tools.log(
+                experiment_id=long(parameters["experiment_id"].value),
+                app=parameters["app"].value,
+                type=type,
+                code=code,
+                file_name=file_name,
+                function_name=function_name,
+                message=message,
+                exception=exception_message
+            )
+
         if path == "/insert_experiment":
 
             comment = ""
@@ -296,5 +333,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 if __name__ == '__main__':
     server = ThreadedHTTPServer(('10.18.75.100', 8888), Handler)
-    tools.log('Starting server, use <Ctrl-C> to stop')
+
+    tools.log('Starting server, use <Ctrl-C> to stop', insert_db=False)
+
     server.serve_forever()

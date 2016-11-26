@@ -97,9 +97,12 @@ class Classification:
 
         is_training = communication.Communication.get_config("is_training")
 
-        tools.log("INFO [create_models] IS_TRAINING is %s" % is_training)
-
-        # pdb.set_trace()
+        tools.log(
+            type="INFO",
+            code="",
+            file_name="classification.py",
+            function_name="create_models",
+            message="IS_TRAINING is %s" % is_training)
 
         if is_training is True:
             return None
@@ -185,8 +188,15 @@ class Classification:
                         print("mean: {:.3f} (std: {:.3f})".format(scores.mean(),
                                                                   scores.std()))
                     except Exception as err:
-                        tools.log("ERROR on cross validation for %s for for_read_iops=%s. MSG: %s " %
-                                  (cinder_id, str(for_read_iops), str(err)))
+                        tools.log(
+                            type="ERROR",
+                            code="machine_learning",
+                            file_name="classification.py",
+                            function_name="create_model",
+                            message="Cross validation for %s for for_read_iops=%s" %
+                                    (cinder_id, str(for_read_iops)),
+                            exception=err)
+
 
                 if self.draw_decision_tree and isinstance(clf, tree.DecisionTreeClassifier):
                     import pydotplus

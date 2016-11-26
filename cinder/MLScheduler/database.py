@@ -27,12 +27,13 @@ def __create_connection_for_insert_delete():
 
 def __str_args(args):
     ret = []
+
     for value in args:
 
         if isinstance(value, basestring) and len(value) > 60:
             value = value[0: 60] + "..."
         ret.append(value)
-    return str(set(ret))
+    return str(ret)
 
 
 def __create_connection_for_get():
@@ -53,10 +54,16 @@ def __execute_delete_procedure(name, args):
 
         conn.commit()
 
-        tools.log("PROCEDURE CALLED [DELETE]: %s args-output: %s" % (name, __str_args(args)), debug=True)
+        tools.log("PROCEDURE CALLED [DELETE]: %s args-output: %s" % (name, __str_args(args)), insert_db=False)
 
     except mysql.connector.Error as err:
-        tools.log("ERROR in [__execute_delete_procedure]. ARGS: %s\nMSG: %s" % (args, str(err)))
+        tools.log(
+            type="ERROR",
+            code="db",
+            file_name="database.py",
+            function_name="__execute_delete_procedure",
+            message="ARGS: %s" % args,
+            exception=err)
 
     finally:
 
@@ -84,12 +91,18 @@ def execute_get_procedure_dictionary(name, args=()):
                 if cursor.nextset() is None:
                     break
             except MySQLdb.Error as err:
-                tools.log("ERROR in [execute_get_procedure_dictionary] on cursor.nextset(). ARGS: %s\nMSG: %s" %
-                          (args, str(err)))
+                tools.log(
+                    type="ERROR",
+                    code="db",
+                    file_name="database.py",
+                    function_name="execute_get_procedure_dictionary",
+                    message="ERROR in [] on cursor.nextset(). ARGS: %s\n" % (args),
+                    exception=err)
+
                 break
 
         tools.log("PROCEDURE CALLED [GET]: %s ARGS: %s result_sets LEN: %i" %
-                  (name, __str_args(args), len(result_sets)), debug=True)
+                  (name, __str_args(args), len(result_sets)), insert_db=False)
 
         if len(result_sets) == 1:
             result_sets = result_sets[0]
@@ -98,7 +111,13 @@ def execute_get_procedure_dictionary(name, args=()):
 
     except MySQLdb.Error as err:
 
-        tools.log("ERROR in execute_get_procedure_dictionary. MSG: %s" % str(err))
+        tools.log(
+            type="ERROR",
+            code="db",
+            file_name="database.py",
+            function_name="execute_get_procedure_dictionary",
+            message="",
+            exception=err)
 
     finally:
 
@@ -135,7 +154,7 @@ def execute_get_procedure_tuple(name, args=()):
             cursor.nextset()
 
         tools.log("PROCEDURE CALLED [GET]: %s ARGS: %s OUTPUT result_sets Length: %s" %
-                  (name, __str_args(args), len(result_sets)), debug=True)
+                  (name, __str_args(args), len(result_sets)), insert_db=False)
 
         if len(result_sets) == 1:
             result_sets = result_sets[0]
@@ -144,8 +163,13 @@ def execute_get_procedure_tuple(name, args=()):
 
     except MySQLdb.Error as err:
 
-        tools.log("ERROR in [execute_get_procedure_tuple]. ARGS: %s\nMSG: %s" %
-                  (args, str(err)))
+        tools.log(
+            type="ERROR",
+            code="db",
+            file_name="database.py",
+            function_name="execute_get_procedure_tuple",
+            message="ARGS: %s" % args,
+            exception=err)
 
     finally:
 
@@ -178,13 +202,18 @@ def __execute_insert_procedure(name, args):
         insert_id = output[len(output) - 1]
 
         tools.log("PROCEDURE CALLED: %s OUTPUT: %s" %
-                  (name, __str_args(output)), debug=True)
+                  (name, __str_args(output)), insert_db=False)
 
         return insert_id
 
     except MySQLdb.Error as err:
-        tools.log("ERROR in __execute_insert_procedure. ARGS -->%s\nERR-->%s" %
-                  (args, str(err)))
+        tools.log(
+            type="ERROR",
+            code="db",
+            file_name="database.py",
+            function_name="__execute_insert_procedure",
+            message="ARGS: %s" % args,
+            exception=err)
 
     finally:
 

@@ -15,13 +15,14 @@ class Experiment:
     experiment = None
 
     def __init__(self, add_new_experiment, config, print_output_if_have_error=False,
-                 print_output=False, debug_run_only_one_server=False, debug_server_ip=None):
+                 print_output=False, debug_run_only_one_server=False, debug_server_ip=None, is_shutdown=False):
 
         self.debug_server_ip = debug_server_ip
         self.print_output_if_have_error = print_output_if_have_error
         self.print_output = print_output
         self.servers = []
         self.debug_run_only_one_server = debug_run_only_one_server
+        self.is_shutdown = is_shutdown
 
         if add_new_experiment:
 
@@ -38,12 +39,31 @@ class Experiment:
                     capacity=100,
                 )
 
-            tools.log("Create new experiment.")
+            tools.log("Create new experiment.", insert_db=False)
 
         Experiment.experiment = communication.Communication.get_current_experiment()
 
-        if Experiment.experiment is not None:
-            tools.log("Experiment id: %s" % str(Experiment.experiment["id"]))
+        if Experiment.experiment is None:
+            tools.log(
+                type="ERROR", code="", file_name="experiment.py", function_name="Experiment",
+                message="cannot create new experiment. insert record to db maybe.")
+
+            raise Exception("cannot create new experiment. insert record to db maybe.")
+
+        if add_new_experiment is True:
+            tools.log(
+                type="INFO", code="start", file_name="experiment.py", function_name="Experiment",
+                message="Create new experiment. Experiment id: %s" % str(Experiment.experiment["id"]))
+
+        if is_shutdown:
+            tools.log(
+                type="INFO", code="shutdown", file_name="experiment.py", function_name="Experiment",
+                message="Shutdown experiment. Experiment id: %s" % str(Experiment.experiment["id"]))
+
+        if add_new_experiment is False and is_shutdown is False:
+            tools.log(
+                type="INFO", code="resume", file_name="experiment.py", function_name="Experiment",
+                message="Resume experiment. Experiment id: %s" % str(Experiment.experiment["id"]))
 
         nova = tools.get_nova_client()
         for server in nova.servers.list():
@@ -62,7 +82,7 @@ class Experiment:
                     if server_ip == self.debug_server_ip:
                         continue
 
-                tools.log("Connecting via ssh to %s" % (server_ip))
+                tools.log("Connecting via ssh to %s" % (server_ip), insert_db=False)
 
                 ssh_client = Experiment._create_ssh_clients(server_ip)
 
@@ -73,9 +93,14 @@ class Experiment:
                     "name": server.name
                 })
 
-            except Exception as ex:
-                tools.log("Error -> canot create SSH client for %s\nError message -> %s"
-                          % (server_ip, ex.message))
+            except Exception as err:
+                tools.log(
+                    type="ERROR",
+                    code="ssh",
+                    file_name="database.py",
+                    function_name="",
+                    message="can not create SSH client for %s" % server_ip,
+                    exception=err)
 
     def close_all_ssh_client(self):
 
@@ -112,6 +137,10 @@ class Experiment:
 
             self._run_command(server, "sudo mkdir /media/")
 
+            self._run_command(server, "sudo rm -r -d /media/*")
+
+            self._run_command(server, "sudo rm /home/ubuntu/*.err;sudo rm /home/ubuntu/*.out")
+
     def _run_command(self, server, command):
 
         if self.print_output:
@@ -143,7 +172,6 @@ class Experiment:
             args.append(str(v))
 
         for i in range(val):
-
             self._run_command_on_all_servers(
                 "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload_%s.out 2>~/workload_%s.err &" % (
                     " ".join(args), str(i), str(i))
@@ -209,7 +237,7 @@ def args_load_defaults(args):
 
     if args.debug_run_only_one_server:
         if args.debug_server_ip is None:
-            args.debug_server_ip = "10.18.75.182"
+            args.debug_server_ip = "10.18.75.187"
 
     if args.performance_fio_test_name is None:
         args.performance_fio_test_name = "resource_evaluation.fio"
@@ -259,9 +287,6 @@ def args_load_defaults(args):
 
 
 if __name__ == '__main__':
-
-    # todo ******* run python experiment.py execute --command "sudo mkdir /media" on the other servers that you shut down
-    # todo when create new server make sure dependecies such as numpy are installed -->python experiment.py execute --command "pip install numpy"
 
     parser = argparse.ArgumentParser(description='Manage experiments.')
 
@@ -359,6 +384,7 @@ if __name__ == '__main__':
                         type=str, required=False,
                         help='life time of a volume. example= "[[5], [1.0]]"')
 
+    is_shutdown = False
     # END WORKLOAD GENERATOR
 
     args = parser.parse_args()
@@ -369,6 +395,7 @@ if __name__ == '__main__':
         args.commands = ["kill-workload", "kill-performance", "det-del"]
         args.debug_server_ip = ''
         args.new = False
+        is_shutdown = True
 
     if "start" in args.commands:
         args.commands = ["init", "workload", "performance"]
@@ -405,7 +432,7 @@ if __name__ == '__main__':
     }
 
     if "del-avail-err" in args.commands:
-        tools.log("CAUSING ERROR WHILE RUNNING THE SCHEDULER. MIGHT NEED TO REMOVE")
+        tools.log("If run within shutdown process might cause error. need to investigate.", insert_db=False)
         tools.delete_volumes_available_error()
 
         sys.exit()
@@ -415,6 +442,7 @@ if __name__ == '__main__':
         is_training = False
 
     e = Experiment(
+        is_shutdown=is_shutdown,
         debug_server_ip=args.debug_server_ip,
         debug_run_only_one_server=args.debug_run_only_one_server,
         add_new_experiment=args.new,
@@ -448,6 +476,8 @@ if __name__ == '__main__':
         # sleep 4 to make sure all the processes are dead are not going to create new volumes!
         if "det-del" in args.commands:
             time.sleep(3)
+
+        e.kill_workload_generator_all_servers()
 
     if "kill-performance" in args.commands:
         e.kill_performance_evaluators()

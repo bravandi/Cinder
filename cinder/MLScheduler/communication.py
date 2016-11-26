@@ -6,6 +6,8 @@ from datetime import datetime
 import json
 import pdb
 
+# must not import log because this file is imported in the openstack scheduler classes and will mess everything
+
 __server_url = 'http://CinderDevelopmentEnv:8888/'
 __server_url = 'http://10.18.75.100:8888/'
 
@@ -110,7 +112,6 @@ def insert_backend(
         ML_model_Path='',
         create_clock=0,
         create_time=None):
-
     if create_time is None:
         create_time = datetime.now()
 
@@ -228,7 +229,10 @@ try:
     # define the function from the database
     exec (Communication.get_current_experiment()["config"]["volume_clock_calc"])
 except Exception as err:
-    print("ERROR on dynamic add of [volume_clock_calc]. IGNORE, if running ['shutdown', 'ServiceHandler']. ERR:%s" % str(err))
+
+    log_tools.log(
+        "ERROR on dynamic add of [volume_clock_calc]. IGNORE, if running ['shutdown', 'ServiceHandler']. ERR:%s" % str(
+            err))
     # sys.exit(1)
 
 
@@ -245,7 +249,9 @@ try:
     # define the function from the database
     exec (Communication.get_current_experiment()["config"]["volume_performance_meter_clock_calc"])
 except Exception as err:
-    print("ERROR on dynamic add of [get_volume_performance_meter_clock_calc]. IGNORE, if running ['shutdown', 'ServiceHandler']. ERR:%s" % str(err))
+    log_tools.log(
+        "ERROR on dynamic add of [get_volume_performance_meter_clock_calc]. IGNORE, if running ['shutdown', 'ServiceHandler']. ERR:%s" % str(
+            err))
     # sys.exit(1)
 
 
@@ -254,15 +260,4 @@ def _parse_response(response):
 
 
 if __name__ == "__main__":
-    # print get_backends_weights(get_current_experiment()["id"], 2333)
-    # print get_prediction(
-    #     volume_request_id=2352
-    # )
-
-    print insert_backend(
-        cinder_id="test",
-        experiment_id=33,
-        capacity=100
-    )
-
     pass

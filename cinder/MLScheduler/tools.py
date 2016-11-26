@@ -1,6 +1,8 @@
 import paramiko
 from StringIO import StringIO
 import pdb
+import database
+from datetime import datetime
 import os
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
@@ -26,12 +28,10 @@ def get_session():
 
 # todo design a proper error management when calling openstack services using client API ies
 def get_cinder_client():
-
     return c_client.Client(2, session=get_session())
 
 
 def get_nova_client():
-
     return n_client.Client(2, session=get_session())
 
 
@@ -40,8 +40,8 @@ def delete_volumes_available_error():
 
     for volume in cinder.volumes.list():
         if volume.status == 'available' or volume.status == 'error':
-
             cinder.volumes.delete(volume.id)
+
 
 class SshClient:
     "A wrapper of paramiko.SSHClient"
@@ -105,15 +105,75 @@ def get_cinder_backends():
     return result
 
 
-def log(message, debug=False):
+def log(
+        message,
+        experiment_id=0,  # the database will insert the latest experiment id
+        type='',
+        app='MLScheduler',
+        code='',
+        file_name='',
+        function_name='',
+        exception='',
+        create_time=None,
+        insert_db=True):
+    exception_message = exception
 
-    print ("\n" + message + "\n")
+    if create_time is None:
+        create_time = datetime.now()
+
+    args = (
+        experiment_id,
+        app,
+        type,
+        code,
+        file_name,
+        function_name,
+        message,
+        exception_message,
+        create_time,
+        -1
+    )
+
+    if exception != '':
+        exception = "\n   ERR: " + str(exception)
+
+    msg = "\n {%s} %s-%s [%s - %s] %s. [%s] %s\n" \
+          % (app, type, code, function_name, file_name, message, create_time.strftime("%Y-%m-%d %H:%M:%S"), str(exception))
+
+    print (msg)
+
+    if insert_db is False:
+        return msg
+
+    try:
+
+        conn = database.__create_connection_for_insert_delete()
+
+        cursor = conn.cursor()
+
+        output = cursor.callproc("insert_log", args)
+
+        conn.commit()
+
+        # output = list(output)
+        # insert_id = output[len(output) - 1]
+        #
+        # print insert_id
+
+    except Exception as err:
+        raise Exception("ERROR in LOGGING. ARGS -->%s\nERR-->%s" % (args, str(err)))
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return msg
 
 
 def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
+    return v.lower() in ("yes", "true", "t", "1")
 
 
 if __name__ == '__main__':
-
     pass
