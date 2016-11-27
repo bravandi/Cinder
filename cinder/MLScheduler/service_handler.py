@@ -307,6 +307,7 @@ class Handler(BaseHTTPRequestHandler):
 
             return database.insert_workload_generator(
                 experiment_id=long(parameters["experiment_id"].value),
+                cinder_id=parameters["cinder_id"].value,
                 tenant_id=long(parameters["tenant_id"].value),
                 nova_id=nova_id,
                 duration=float(parameters["duration"].value),

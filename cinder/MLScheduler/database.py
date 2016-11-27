@@ -382,6 +382,7 @@ def insert_experiment(
 def insert_workload_generator(
         experiment_id,
         tenant_id,  # bigint,
+        cinder_id,
         nova_id,  # VARCHAR(36)
         duration,  # float,
         read_iops,
@@ -393,6 +394,7 @@ def insert_workload_generator(
     args = (
         experiment_id,  # experiment_ID				bigint,
         tenant_id,  # bigint,
+        cinder_id,
         nova_id,
         duration,  # INT(11),
         read_iops,
