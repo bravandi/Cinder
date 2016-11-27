@@ -161,6 +161,15 @@ class Experiment:
 
     def start_workload_generators(self, arguments):
 
+        # args = []
+        # for k, v in arguments.iteritems():
+        #     args.append(str(k))
+        #     args.append(str(v))
+        #
+        # self._run_command_on_all_servers(
+        #     "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &"
+        #     % (" ".join(args)))
+
         max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
         val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
 
@@ -185,8 +194,8 @@ class Experiment:
             args.append(str(v))
 
         self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &" % (
-                " ".join(args)))
+            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &"
+            % (" ".join(args)))
 
     def kill_performance_evaluators(self):
         self._run_command_on_all_servers(
@@ -465,6 +474,8 @@ if __name__ == '__main__':
         e.initialize_commands()
 
     if "workload" in args.commands:
+        e._run_command_on_all_servers("sudo rm /home/ubuntu/lock")
+
         e.start_workload_generators(workload_args)
 
     if "performance" in args.commands:
