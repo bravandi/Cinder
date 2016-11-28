@@ -76,6 +76,25 @@ class Communication:
 
         return Communication._current_experiment
 
+    @staticmethod
+    def reload():
+
+        try:
+            ex = requests.get(Communication.__server_url + "get_current_experiment")
+        except Exception as err:
+            log_tools.log("RELOAD FAILED. CANNOT CONNECT TO SERVER_HANDLER to get the CURRENT EXPERIMENT")
+            return None
+
+        try:
+            ex = json.loads(ex.text)
+
+            ex["config"] = json.loads(ex["config"])
+        except Exception as err:
+            log_tools.log("RELOAD FAILED. ERROR [get_current_experiment] cannot load the experiment 'config'")
+            return None
+
+        Communication._current_experiment = ex
+
 
 def insert_volume(
         experiment_id,

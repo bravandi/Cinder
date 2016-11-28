@@ -281,7 +281,7 @@ class Handler(BaseHTTPRequestHandler):
             if parameters.has_key("workload_comment"):
                 workload_comment = parameters["workload_comment"].value
 
-            return database.insert_experiment(
+            new_experiment = database.insert_experiment(
                 workload_id=long(parameters["workload_id"].value),
                 comment=comment,
                 scheduler_algorithm=scheduler_algorithm,
@@ -290,6 +290,11 @@ class Handler(BaseHTTPRequestHandler):
                 workload_generate_method=int(parameters["workload_generate_method"].value),
                 create_time=parameters["create_time"].value
             )
+
+            # update current experiment id if new experiment added
+            communication.Communication.reload()
+
+            return new_experiment
 
         if path == "/insert_workload_generator":
 
