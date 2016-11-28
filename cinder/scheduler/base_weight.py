@@ -17,12 +17,14 @@
 Pluggable Weighing support
 """
 
+import pdb
 import abc
 
 import six
 
 from cinder.scheduler import base_handler
 import cinder.MLScheduler.communication as communication
+
 
 def normalize(weight_list, minval=None, maxval=None):
     """Normalize the values in a list between 0 and 1.0.
@@ -55,6 +57,7 @@ def normalize(weight_list, minval=None, maxval=None):
 
 class WeighedObject(object):
     """Object with weight information."""
+
     def __init__(self, obj, weight):
         self.obj = obj
         self.weight = weight
@@ -117,9 +120,7 @@ class BaseWeigher(object):
 
         return weights
 
-
 class BaseWeightHandler(base_handler.BaseHandler):
-
     object_class = WeighedObject
 
     def get_weighed_objects(self, weigher_classes, obj_list,
@@ -141,27 +142,31 @@ class BaseWeightHandler(base_handler.BaseHandler):
                                 minval=weigher.minval,
                                 maxval=weigher.maxval)
 
-
-
             for i, weight in enumerate(weights):
                 obj = weighed_objs[i]
                 obj.weight += weigher.weight_multiplier() * weight
 
+        final_result = []
+        try:
 
-        experiment_id_volume_request_id = weighing_properties['request_spec']['volume_properties']['display_name'].split(',')
+            experiment_id_volume_request_id = weighing_properties['request_spec']['volume_properties'][
+                'display_name'].split(',')
 
-        predictions = communication.get_prediction(
-            volume_request_id=int(experiment_id_volume_request_id[1])
-        )
+            predictions = communication.get_prediction(
+                volume_request_id=int(experiment_id_volume_request_id[1])
+            )
 
-        if predictions is not None:
+            if predictions is not None:
 
-            final_result = []
-            for wo in weighed_objs:
-                for prediction in predictions:
-                    if wo.to_dict()['host'] == prediction:
-                        final_result.append(wo)
-        else:
-            final_result=weighed_objs
+                for wo in weighed_objs:
+                    for prediction in predictions:
+                        if wo.to_dict()['host'] == prediction:
+                            final_result.append(wo)
+            else:
+                final_result = weighed_objs
+        except Exception as err:
+
+            pdb.set_trace()
+            final_result = weighed_objs
 
         return sorted(final_result, key=lambda x: x.weight, reverse=True)

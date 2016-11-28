@@ -114,12 +114,13 @@ class Experiment:
 
             ret = self._run_command(server, "ls ~")
 
-            if "fio-2.0.9\n" not in ret["out"]:
-                self._run_command(server, "sudo wget https://github.com/Crowd9/Benchmark/raw/master/fio-2.0.9.tar.gz")
-                self._run_command(server, "sudo tar xf ~/fio-2.0.9.tar.gz")
-                self._run_command(server, "sudo make -C ~/fio-2.0.9")
+            # if "fio-2.0.9\n" not in ret["out"]:
+            #     self._run_command(server, "sudo wget https://github.com/Crowd9/Benchmark/raw/master/fio-2.0.9.tar.gz")
+            #     self._run_command(server, "sudo tar xf ~/fio-2.0.9.tar.gz")
+            #     self._run_command(server, "sudo make -C ~/fio-2.0.9")
 
             ret = self._run_command(server, "sudo cat /etc/hosts")
+
             if server["name"] not in str(ret["out"]):
                 self._run_command(
                     server,
@@ -161,30 +162,30 @@ class Experiment:
 
     def start_workload_generators(self, arguments):
 
-        # args = []
-        # for k, v in arguments.iteritems():
-        #     args.append(str(k))
-        #     args.append(str(v))
-        #
-        # self._run_command_on_all_servers(
-        #     "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &"
-        #     % (" ".join(args)))
-
-        max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
-        val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
-
-        arguments["--max_number_volumes"] = '"[[1], [1.0]]"'
-
         args = []
         for k, v in arguments.iteritems():
             args.append(str(k))
             args.append(str(v))
 
-        for i in range(val):
-            self._run_command_on_all_servers(
-                "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload_%s.out 2>~/workload_%s.err &" % (
-                    " ".join(args), str(i), str(i))
-            )
+        self._run_command_on_all_servers(
+            "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &"
+            % (" ".join(args)))
+
+        # max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
+        # val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
+        #
+        # arguments["--max_number_volumes"] = '"[[1], [1.0]]"'
+        #
+        # args = []
+        # for k, v in arguments.iteritems():
+        #     args.append(str(k))
+        #     args.append(str(v))
+        #
+        # for i in range(val):
+        #     self._run_command_on_all_servers(
+        #         "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload_%s.out 2>~/workload_%s.err &" % (
+        #             " ".join(args), str(i), str(i))
+        #     )
 
     def start_performance_evaluators(self, arguments):
 

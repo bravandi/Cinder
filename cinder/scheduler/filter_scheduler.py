@@ -29,6 +29,7 @@ from cinder.scheduler import driver
 from cinder.scheduler import scheduler_options
 from cinder.volume import utils
 import cinder.MLScheduler.communication as mlscheduler_communication
+import pdb
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -86,23 +87,33 @@ class FilterScheduler(driver.Scheduler):
                                       filter_properties)
 
         # use displan name of volume to transfer the volume_request id
-
-        experiment_id_schedule_response_id = request_spec['volume_properties']['display_name'].split(",")
-        experiment_id_schedule_response_id[0] = int(experiment_id_schedule_response_id[0])
-        experiment_id_schedule_response_id[1] = int(experiment_id_schedule_response_id[1])
+        try:
+            experiment_id_schedule_response_id = request_spec['volume_properties']['display_name'].split(",")
+            experiment_id_schedule_response_id[0] = int(experiment_id_schedule_response_id[0])
+            experiment_id_schedule_response_id[1] = int(experiment_id_schedule_response_id[1])
+        except Exception as err:
+            pdb.set_trace()
 
         if not weighed_host:
-            mlscheduler_communication.insert_schedule_response(
-                experiment_id=experiment_id_schedule_response_id[0],
-                volume_request_id=experiment_id_schedule_response_id[1],
-                response_id=mlscheduler_communication.ScheduleResponseType.rejected_no_weighed_host())
+            try:
+                mlscheduler_communication.insert_schedule_response(
+                    experiment_id=experiment_id_schedule_response_id[0],
+                    volume_request_id=experiment_id_schedule_response_id[1],
+                    response_id=mlscheduler_communication.ScheduleResponseType.rejected_no_weighed_host())
+
+            except Exception as err:
+                pdb.set_trace()
 
             raise exception.NoValidHost(reason=_("No weighed hosts available"))
 
-        schedule_response_id = mlscheduler_communication.insert_schedule_response(
-            experiment_id=experiment_id_schedule_response_id[0],
-            volume_request_id=experiment_id_schedule_response_id[1],
-            response_id=mlscheduler_communication.ScheduleResponseType.accepted())
+        try:
+            schedule_response_id = mlscheduler_communication.insert_schedule_response(
+                experiment_id=experiment_id_schedule_response_id[0],
+                volume_request_id=experiment_id_schedule_response_id[1],
+                response_id=mlscheduler_communication.ScheduleResponseType.accepted())
+        except Exception as err:
+
+            pdb.set_trace()
 
         host = weighed_host.obj.host
         volume_id = request_spec['volume_id']
@@ -118,13 +129,15 @@ class FilterScheduler(driver.Scheduler):
                                          request_spec, filter_properties,
                                          allow_reschedule=True)
 
-        # todo fix experiment id
-        mlscheduler_communication.insert_volume(
-            experiment_id=experiment_id_schedule_response_id[0],
-            cinder_id=volume_id,
-            backend_cinder_id=host,
-            schedule_response=schedule_response_id,
-            capacity=request_spec['volume']['size'])
+        try:
+            mlscheduler_communication.insert_volume(
+                experiment_id=experiment_id_schedule_response_id[0],
+                cinder_id=volume_id,
+                backend_cinder_id=host,
+                schedule_response=schedule_response_id,
+                capacity=request_spec['volume']['size'])
+        except Exception as err:
+            pdb.set_trace()
 
     def host_passes_filters(self, context, host, request_spec,
                             filter_properties):
