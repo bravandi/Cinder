@@ -252,7 +252,12 @@ def args_load_defaults(args):
 
     if args.debug_run_only_one_server:
         if args.debug_server_ip is None:
-            args.debug_server_ip = "10.18.75.187"
+            args.debug_server_ip = "10.18.75.189"
+
+    if args.debug_server_ip is not None:
+        args.debug_run_only_one_server = True
+    else:
+        args.debug_run_only_one_server = False
 
     if args.performance_fio_test_name is None:
         args.performance_fio_test_name = "resource_evaluation.fio"
