@@ -160,10 +160,14 @@ class Experiment:
 
         return ret
 
-    def start_workload_generators(self, arguments):
+    def start_workload_generators(self, workload_args, performance_args):
 
         args = []
-        for k, v in arguments.iteritems():
+        for k, v in workload_args.iteritems():
+            args.append(str(k))
+            args.append(str(v))
+
+        for k, v in performance_args.iteritems():
             args.append(str(k))
             args.append(str(v))
 
@@ -189,14 +193,15 @@ class Experiment:
 
     def start_performance_evaluators(self, arguments):
 
-        args = []
-        for k, v in arguments.iteritems():
-            args.append(str(k))
-            args.append(str(v))
-
-        self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &"
-            % (" ".join(args)))
+        pass
+        # args = []
+        # for k, v in arguments.iteritems():
+        #     args.append(str(k))
+        #     args.append(str(v))
+        #
+        # self._run_command_on_all_servers(
+        #     "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &"
+        #     % (" ".join(args)))
 
     def kill_performance_evaluators(self):
         self._run_command_on_all_servers(
@@ -434,11 +439,11 @@ if __name__ == '__main__':
     }
 
     performance_args = {
-        "--fio_test_name": args.performance_fio_test_name,
-        "--terminate_if_takes": args.performance_terminate_if_takes,
-        "--restart_gap": args.performance_restart_gap,
-        "--restart_gap_after_terminate": args.performance_restart_gap_after_terminate,
-        "--show_fio_output": args.performance_show_fio_output,
+        "--perf_fio_test_name": args.performance_fio_test_name,
+        "--perf_terminate_if_takes": args.performance_terminate_if_takes,
+        "--perf_restart_gap": args.performance_restart_gap,
+        "--perf_restart_gap_after_terminate": args.performance_restart_gap_after_terminate,
+        "--perf_show_fio_output": args.performance_show_fio_output,
     }
 
     if "del-avail-err" in args.commands:
@@ -477,7 +482,7 @@ if __name__ == '__main__':
     if "workload" in args.commands:
         e._run_command_on_all_servers("sudo rm /home/ubuntu/lock")
 
-        e.start_workload_generators(workload_args)
+        e.start_workload_generators(workload_args, performance_args)
 
     if "performance" in args.commands:
         e.start_performance_evaluators(performance_args)
