@@ -122,15 +122,15 @@ class Experiment:
             ret = self._run_command(server, "sudo cat /etc/hosts")
 
             if server["name"] not in str(ret["out"]):
-                self._run_command(
+                ret = self._run_command(
                     server,
                     "echo '%s\t%s' | sudo tee --append /etc/hosts" % (server["ip"], server["name"]))
 
-            self._run_command(server, "sudo rm -r -d ~/MLSchedulerAgent/")
-            ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
-            if ret["retval"] == 128:
-                self._run_command(server,
-                                  "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
+            # self._run_command(server, "sudo rm -r -d ~/MLSchedulerAgent/")
+            # ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
+            # if ret["retval"] == 128:
+            #     self._run_command(server,
+            #                       "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
 
             self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
 
@@ -232,11 +232,16 @@ class Experiment:
 
         s = f.read()
 
+        uname = "centos"
+
+        if server_ip == "10.18.75.189":
+            uname = "ubuntu"
+
         client = tools.SshClient(
             host=server_ip,
             port=22,
             key=s,
-            username='ubuntu',
+            username=uname,
             password='')
 
         return client

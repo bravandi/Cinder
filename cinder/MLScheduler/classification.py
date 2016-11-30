@@ -320,8 +320,6 @@ class Classification:
             myfile.write(debug_dump)
         myfile.close()
 
-        # pdb.set_trace()
-
         if len(final_result) == 0:
             if self.read_is_priority:
                 final_result = read_candidates
