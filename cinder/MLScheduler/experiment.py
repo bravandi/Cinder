@@ -112,12 +112,12 @@ class Experiment:
 
         for server in self.servers:
 
-            ret = self._run_command(server, "ls ~")
+            ret = self._run_command(server, "ls " + tools.get_path_expanduser("~"))
 
             # if "fio-2.0.9\n" not in ret["out"]:
             #     self._run_command(server, "sudo wget https://github.com/Crowd9/Benchmark/raw/master/fio-2.0.9.tar.gz")
-            #     self._run_command(server, "sudo tar xf ~/fio-2.0.9.tar.gz")
-            #     self._run_command(server, "sudo make -C ~/fio-2.0.9")
+            #     self._run_command(server, "sudo tar xf %s" % tools.get_path_expanduser("~/fio-2.0.9.tar.gz"))
+            #     self._run_command(server, "sudo make -C %s" % tools.get_path_expanduser("~/fio-2.0.9"))
 
             ret = self._run_command(server, "sudo cat /etc/hosts")
 
@@ -126,15 +126,19 @@ class Experiment:
                     server,
                     "echo '%s\t%s' | sudo tee --append /etc/hosts" % (server["ip"], server["name"]))
 
-            # self._run_command(server, "sudo rm -r -d ~/MLSchedulerAgent/")
-            # ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
-            # if ret["retval"] == 128:
-            #     self._run_command(server,
-            #                       "sudo git -C ~/MLSchedulerAgent/ reset --hard; sudo git -C ~/MLSchedulerAgent/ pull")
+            self._run_command(server, "sudo rm -r -d %s" % tools.get_path_expanduser("~/MLSchedulerAgent/"))
+            ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
+            if ret["retval"] == 128:
+                self._run_command(
+                    server,
+                    "sudo git -C %s reset --hard; sudo git -C %s pull" %
+                    (tools.get_path_expanduser("~/MLSchedulerAgent/"), tools.get_path_expanduser("~/MLSchedulerAgent/"))
+                )
 
-            self._run_command(server, "sudo echo '%s' > ~/tenantid" % server["id"])
+            self._run_command(server, "sudo echo '%s' > %s" % (server["id"], tools.get_path_expanduser("~/tenantid")))
 
-            self._run_command(server, "sudo echo '%s@%s' > ~/tenant_description" % (server["name"], server["ip"]))
+            self._run_command(server, "sudo echo '%s@%s' > %s" %
+                              (server["name"], server["ip"], tools.get_path_expanduser("~/tenant_description")))
 
             self._run_command(server, "sudo mkdir /media/")
 
@@ -172,8 +176,14 @@ class Experiment:
             args.append(str(v))
 
         self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload.out 2>~/workload.err &"
-            % (" ".join(args)))
+            "sudo nohup python %s start %s >%s 2>%s &" %
+            (
+                tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
+                " ".join(args),
+                tools.get_path_expanduser("~/workload.out"),
+                tools.get_path_expanduser("~/workload.err")
+            )
+        )
 
         # max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
         # val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
@@ -187,8 +197,13 @@ class Experiment:
         #
         # for i in range(val):
         #     self._run_command_on_all_servers(
-        #         "sudo nohup python ~/MLSchedulerAgent/workload_generator.py start %s >~/workload_%s.out 2>~/workload_%s.err &" % (
-        #             " ".join(args), str(i), str(i))
+        #         "sudo nohup python %s start %s >%s 2>%s &" %
+        #         (
+        #             tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
+        #             " ".join(args),
+        #             tools.get_path_expanduser("~/workload.out"),
+        #             tools.get_path_expanduser("~/workload.err")
+        #         )
         #     )
 
     def start_performance_evaluators(self, arguments):
@@ -200,8 +215,14 @@ class Experiment:
         #     args.append(str(v))
         #
         # self._run_command_on_all_servers(
-        #     "sudo nohup python ~/MLSchedulerAgent/performance_evaluation.py %s >~/performance_evaluation.out 2>~/performance_evaluation.err &"
-        #     % (" ".join(args)))
+        #     "sudo nohup python %s %s >%s 2>%s &" %
+        #     (
+        #         tools.get_path_expanduser("~/MLSchedulerAgent/performance_evaluation.py"),
+        #         " ".join(args),
+        #         tools.get_path_expanduser("~/performance_evaluation.out"),
+        #         tools.get_path_expanduser("~/performance_evaluation.err")
+        #     )
+        # )
 
     def kill_performance_evaluators(self):
         self._run_command_on_all_servers(
@@ -218,7 +239,13 @@ class Experiment:
 
     def detach_delete_all_servers_volumes(self):
         self._run_command_on_all_servers(
-            "sudo nohup python ~/MLSchedulerAgent/workload_generator.py det-del >~/detach_delete_all_servers_volumes.out 2>~/detach_delete_all_servers_volumes.err &")
+            "sudo nohup python %s det-del >%s 2>%s &" %
+            (
+                tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
+                tools.get_path_expanduser("~/detach_delete_all_servers_volumes.out"),
+                tools.get_path_expanduser("~/detach_delete_all_servers_volumes.err"),
+            )
+        )
 
     @staticmethod
     def _create_ssh_clients(server_ip):

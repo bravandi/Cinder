@@ -175,5 +175,16 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 
+def get_path_expanduser(var=""):
+
+    if var.startswith("~"):
+        var = var[1:]
+
+    if var.startswith("/"):
+        var = var[1:]
+
+    return "/home/centos/" + var
+
+
 if __name__ == '__main__':
     pass
