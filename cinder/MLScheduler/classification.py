@@ -49,7 +49,7 @@ class Classification:
 
         return Classification.current_classification
 
-    def prepare_traning_dataset(self, result_set, target_column, ignore_columns=[]):
+    def prepare_traning_dataset(self, result_set, response_variable_column, ignore_columns=[]):
         columns = {}
 
         cut_columns_indexes = []
@@ -59,7 +59,7 @@ class Classification:
 
             columns[column] = result_set[0].index(column)
 
-            if column == target_column:
+            if column == response_variable_column:
                 cut_columns_indexes.append(columns[column])
 
             if column in ignore_columns:
@@ -115,7 +115,7 @@ class Classification:
         self.create_model(training_data, for_read_iops=True)
         self.create_model(training_data, for_read_iops=False)
 
-    def create_model(self, training_data, for_read_iops):
+    def create_model(self, training_dataset, for_read_iops):
 
         is_backend_id = True
         backend_id = 0
@@ -128,13 +128,13 @@ class Classification:
         # "requested_write_iops_total",
         # "requested_read_iops_total",
         if for_read_iops:
-            target_column = "sampled_read_violation_count"
+            response_variable_column = "sampled_read_violation_count"
             ignore_columns = ["sampled_write_violation_count"]
         else:
-            target_column = "sampled_write_violation_count"
+            response_variable_column = "sampled_write_violation_count"
             ignore_columns = ["sampled_read_violation_count"]
 
-        for result_set in training_data:
+        for result_set in training_dataset:
 
             if is_backend_id:
                 is_backend_id = False
@@ -145,7 +145,7 @@ class Classification:
 
                 x, y, feature_names = self.prepare_traning_dataset(
                     result_set,
-                    target_column=target_column,
+                    response_variable_column=response_variable_column,
                     ignore_columns=ignore_columns
                 )
 

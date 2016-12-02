@@ -122,7 +122,8 @@ class Handler(BaseHTTPRequestHandler):
                 "get_training_dataset",
                 args=(
                     long(parameters["experiment_id"][0]),
-                    long(parameters["training_dataset_size"][0])
+                    # included this parameter in the stored procedure
+                    # long(parameters["training_dataset_size"][0])
                 ))
 
             return training_dataset
