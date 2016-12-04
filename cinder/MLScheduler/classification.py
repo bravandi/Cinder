@@ -255,9 +255,6 @@ class Classification:
         classifier_predictions = {}
         backends_to_be_weight_if_accept_request = {}
 
-        if communication.Communication.get_config("is_training") is True:
-            return None
-
         backends_current_weights = communication.get_backends_weights(
             experiment_id=communication.Communication.get_current_experiment()["id"],
             volume_request_id=volume_request_id)
@@ -405,6 +402,9 @@ class Classification:
         return final_result
 
     def predict(self, volume_request_id):
+
+        if communication.Communication.get_config("is_training") is True:
+            return None
 
         clock = communication.get_volume_performance_meter_clock_calc(datetime.now())
 

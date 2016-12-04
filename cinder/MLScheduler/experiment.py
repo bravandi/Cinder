@@ -314,6 +314,8 @@ def args_load_defaults(args):
         args.workload_request_write_iops = "[[400, 500, 600], [0.3, 0.4, 0.3]]"
     if args.workload_delay_between_storage_workload_generation is None:
         args.workload_delay_between_storage_workload_generation = "[[2], [1.0]]"
+    if args.workload_delay_between_create_volume_generation is None:
+        args.workload_delay_between_create_volume_generation = "[[2], [1.0]]"
     if args.workload_max_number_volumes is None:
         args.workload_max_number_volumes = "[[6], [1.0]]"
     if args.workload_volume_life_seconds is None:
@@ -426,6 +428,10 @@ if __name__ == '__main__':
                         type=str, required=False,
                         help='wait xx seconds between generating workloads. example="[[2], [1.0]]"')
 
+    parser.add_argument("--workload_delay_between_create_volume_generation", default=None, metavar='',
+                        type=str, required=False,
+                        help='wait xx seconds between creating new volume request. example="[[5], [1.0]]"')
+
     parser.add_argument("--workload_max_number_volumes", default=None, metavar='',
                         type=str, required=False,
                         help='max number of vilumes to be created. example="[[6], [1.0]]"')
@@ -472,6 +478,7 @@ if __name__ == '__main__':
         "--request_read_iops": json.dumps(args.workload_request_read_iops),
         "--request_write_iops": json.dumps(args.workload_request_write_iops),
         '--delay_between_storage_workload_generation': json.dumps(args.workload_delay_between_storage_workload_generation),
+        "--delay_between_create_volume_generation": json.dumps(args.workload_delay_between_create_volume_generation),
         "--max_number_volumes": json.dumps(args.workload_max_number_volumes),
         "--volume_life_seconds": json.dumps(args.workload_volume_life_seconds),
         "--volume_size": json.dumps(args.workload_volume_size)
