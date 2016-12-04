@@ -3,12 +3,125 @@ from cmath import exp
 import tools
 import os
 import communication
+from multiprocessing import Process
 import time
 import json
 import sys
 import json
 import pdb
 import numpy as np
+
+
+class RemoteMachine():
+    def __init__(self, server_ip):
+        self.proc = None
+        self.server_ip = server_ip
+
+    def start(self, workload_args, performance_args):
+        if self.is_alive() is True:
+            return False
+
+        self.proc = Process(
+            target=RemoteMachine.start_workload_generator,
+            args=(self, workload_args, performance_args))
+
+        # tools.log(app="W_STORAGE_GEN", message="   Start test for volume: %s Time: %s" %
+        #           (self.cinder_volume_id, self.last_start_time))
+        self.proc.start()
+
+        return True
+
+    def terminate(self):
+        if self.proc is None:
+            tools.log(
+                app="MLScheduler",
+                type="ERROR",
+                code="exp_null_terminate",
+                file_name="experiment.py",
+                function_name="terminate",
+                message="proc is null cant terminate. maybe RemoteMachine.start() is not called.")
+
+            return False
+
+        self.proc.terminate()
+
+        return True
+
+    def is_alive(self):
+
+        if self.proc is None:
+            tools.log(
+                app="MLScheduler",
+                type="ERROR",
+                code="exp_null_is_alive",
+                file_name="experiment.py",
+                function_name="is_alive",
+                message="proc is null cant call is_alive(). maybe RemoteMachine.start() is not called.")
+
+            return False
+
+        return self.proc.is_alive()
+
+    @staticmethod
+    def start_workload_generator(remote_machine_instance, workload_args, performance_args):
+
+        # def start_workload_generators(self, workload_args, performance_args):
+
+        args = []
+        for k, v in workload_args.iteritems():
+            args.append(str(k))
+            args.append(str(v))
+
+        for k, v in performance_args.iteritems():
+            args.append(str(k))
+            args.append(str(v))
+
+        command = "sudo python %s start %s >%s 2>%s" % \
+                  (
+                      tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
+                      " ".join(args),
+                      tools.get_path_expanduser("~/workload.out"),
+                      tools.get_path_expanduser("~/workload.err")
+                  )
+
+        # todo save the command in database will be handy for running test experiments
+        remote_machine_instance.ssh_client = Experiment.create_ssh_clients(remote_machine_instance.server_ip)
+
+        Experiment.run_command(
+            ssh_client=remote_machine_instance.ssh_client,
+            command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo\"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
+            command, tools.get_path_expanduser("command_workload"))
+        )
+
+        Experiment.run_command(
+            ssh_client=remote_machine_instance.ssh_client,
+            command="source command_workload.sh"
+        )
+
+        # commented code below is for running multiple workload generators. not gonna work because of detecting current device issue. issue
+
+        # self._run_command_on_all_servers(command)
+
+        # max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
+        # val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
+        #
+        # arguments["--max_number_volumes"] = '"[[1], [1.0]]"'
+        #
+        # args = []
+        # for k, v in arguments.iteritems():
+        #     args.append(str(k))
+        #     args.append(str(v))
+        #
+        # for i in range(val):
+        #     self._run_command_on_all_servers(
+        #         "sudo nohup python %s start %s >%s 2>%s &" %
+        #         (
+        #             tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
+        #             " ".join(args),
+        #             tools.get_path_expanduser("~/workload.out"),
+        #             tools.get_path_expanduser("~/workload.err")
+        #         )
+        #     )
 
 
 class Experiment:
@@ -21,6 +134,7 @@ class Experiment:
         self.print_output_if_have_error = print_output_if_have_error
         self.print_output = print_output
         self.servers = []
+        self.remote_machine_list = []
         self.debug_run_only_one_server = debug_run_only_one_server
         self.is_shutdown = is_shutdown
 
@@ -86,7 +200,7 @@ class Experiment:
 
                 tools.log("Connecting via ssh to %s" % (server_ip), insert_db=False)
 
-                ssh_client = Experiment._create_ssh_clients(server_ip)
+                ssh_client = Experiment.create_ssh_clients(server_ip)
 
                 self.servers.append({
                     "id": server.id,
@@ -146,67 +260,36 @@ class Experiment:
 
             self._run_command(server, "sudo rm -r -d /media/*")
 
-            self._run_command(server, "sudo rm /home/ubuntu/*.err;sudo rm /home/ubuntu/*.out")
+            self._run_command(server, "sudo rm %s;sudo rm %s" %
+                              (tools.get_path_expanduser("*.err"),
+                               tools.get_path_expanduser("*.out")))
 
     def _run_command(self, server, command):
-
-        if self.print_output:
-            print ("{EXECUTE %s} %s\n" % (server["ip"], command))
-
-        ret = server["ssh"].execute(command)
-
-        if (not self.print_output) and self.print_output_if_have_error and ret["retval"] > 0:
-            print ("{EXECUTED %s} %s\n" % (server["ip"], command))
-            print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s   ERR:%s \n" %
-                   (server["ip"], ret["out"], ret["retval"], ret["err"]))
-
-        if self.print_output:
-            print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s   ERR:%s \n" %
-                   (server["ip"], ret["out"], ret["retval"], ret["err"]))
-
-        return ret
-
-    def start_workload_generators(self, workload_args, performance_args):
-
-        args = []
-        for k, v in workload_args.iteritems():
-            args.append(str(k))
-            args.append(str(v))
-
-        for k, v in performance_args.iteritems():
-            args.append(str(k))
-            args.append(str(v))
-
-        self._run_command_on_all_servers(
-            "sudo nohup python %s start %s >%s 2>%s &" %
-            (
-                tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
-                " ".join(args),
-                tools.get_path_expanduser("~/workload.out"),
-                tools.get_path_expanduser("~/workload.err")
-            )
+        return Experiment.run_command(
+            command=command,
+            ssh_client=server["ssh"],
+            print_output=self.print_output,
+            print_output_if_have_error=self.print_output_if_have_error
         )
 
-        # max_number_volumes = json.loads(arguments["--max_number_volumes"].replace('"', ''))
-        # val = int(np.random.choice(max_number_volumes[0], 1, max_number_volumes[1]))
-        #
-        # arguments["--max_number_volumes"] = '"[[1], [1.0]]"'
-        #
-        # args = []
-        # for k, v in arguments.iteritems():
-        #     args.append(str(k))
-        #     args.append(str(v))
-        #
-        # for i in range(val):
-        #     self._run_command_on_all_servers(
-        #         "sudo nohup python %s start %s >%s 2>%s &" %
-        #         (
-        #             tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
-        #             " ".join(args),
-        #             tools.get_path_expanduser("~/workload.out"),
-        #             tools.get_path_expanduser("~/workload.err")
-        #         )
-        #     )
+    @staticmethod
+    def run_command(ssh_client, command, print_output=True, print_output_if_have_error=True):
+
+        if print_output:
+            print ("{EXECUTE %s} %s\n" % (ssh_client.host, command))
+
+        ret = ssh_client.execute(command)
+
+        if (not print_output) and print_output_if_have_error and ret["retval"] > 0:
+            print ("{EXECUTED %s} %s\n" % (ssh_client.host, command))
+            print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s   ERR:%s \n" %
+                   (ssh_client.host, ret["out"], ret["retval"], ret["err"]))
+
+        if print_output:
+            print ("     [RESPONSE %s] OUT: %s\n     RETVAL:%s   ERR:%s \n" %
+                   (ssh_client.host, ret["out"], ret["retval"], ret["err"]))
+
+        return ret
 
     def start_performance_evaluators(self, arguments):
 
@@ -227,20 +310,24 @@ class Experiment:
         # )
 
     def kill_performance_evaluators(self):
-        self._run_command_on_all_servers(
-            "ps -ef | grep performance_evaluation | grep -v grep | awk '{print $2}' | xargs sudo kill -9")
+        self.run_command_on_all_servers(
+            "ps -ef | grep python | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
+            # "ps -ef | grep performance_evaluation | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
+        )
 
     def kill_workload_generator_all_servers(self):
-        self._run_command_on_all_servers(
-            "ps -ef | grep workload_generator | grep -v grep | awk '{print $2}' | xargs sudo kill -9")
+        self.run_command_on_all_servers(
+            "ps -ef | grep python | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
+            # "ps -ef | grep workload_generator | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
+        )
 
-    def _run_command_on_all_servers(self, command):
+    def run_command_on_all_servers(self, command):
 
         for server in self.servers:
             self._run_command(server, command)
 
     def detach_delete_all_servers_volumes(self):
-        self._run_command_on_all_servers(
+        self.run_command_on_all_servers(
             "sudo nohup python %s det-del >%s 2>%s &" %
             (
                 tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
@@ -249,8 +336,40 @@ class Experiment:
             )
         )
 
+    def start_workload_generators(self, workload_args, performance_args):
+
+        for server in self.servers:
+            remote_machine = RemoteMachine(server_ip=server["ip"])
+
+            self.remote_machine_list.append(remote_machine)
+            
+            remote_machine.start(workload_args=workload_args, performance_args=performance_args)
+
+        while True:
+            command = raw_input('Enter command [stop]: ')
+
+            if command in ["stop", "s"]:
+                print('stopping the experiments.')
+
+                for remote_machine in self.remote_machine_list:
+                    print("terminating remote ip: %s" % remote_machine.server_ip)
+
+                    remote_machine.terminate()
+
+                self.kill_workload_generator_all_servers()
+
+                time.sleep(3)
+
+                e.kill_workload_generator_all_servers()
+
+                e.detach_delete_all_servers_volumes()
+
+                break
+
+            print ("wrong command.")
+
     @staticmethod
-    def _create_ssh_clients(server_ip):
+    def create_ssh_clients(server_ip):
         f = open(
             os.path.join(
                 os.path.expanduser('~'),
@@ -357,7 +476,7 @@ if __name__ == '__main__':
                         """
                         )
 
-    parser.add_argument('--execute_command_in_bash', metavar='', type=str, required=False,
+    parser.add_argument('--command', metavar='', type=str, required=False,
                         help='execute command on all servers.')
 
     parser.add_argument('--training_experiment_id', default=0, metavar='', type=int, required=False,
@@ -477,7 +596,8 @@ if __name__ == '__main__':
         "--wait_after_volume_rejected": json.dumps(args.workload_wait_after_volume_rejected),
         "--request_read_iops": json.dumps(args.workload_request_read_iops),
         "--request_write_iops": json.dumps(args.workload_request_write_iops),
-        '--delay_between_storage_workload_generation': json.dumps(args.workload_delay_between_storage_workload_generation),
+        '--delay_between_storage_workload_generation': json.dumps(
+            args.workload_delay_between_storage_workload_generation),
         "--delay_between_create_volume_generation": json.dumps(args.workload_delay_between_create_volume_generation),
         "--max_number_volumes": json.dumps(args.workload_max_number_volumes),
         "--volume_life_seconds": json.dumps(args.workload_volume_life_seconds),
@@ -524,11 +644,11 @@ if __name__ == '__main__':
 
     if "init" in args.commands:
         e.initialize_commands()
+        pass
 
     if "workload" in args.commands:
-        e._run_command_on_all_servers("sudo rm /home/ubuntu/lock")
-
         e.start_workload_generators(workload_args, performance_args)
+        pass
 
     if "performance" in args.commands:
         e.start_performance_evaluators(performance_args)
@@ -550,6 +670,6 @@ if __name__ == '__main__':
         # tools.delete_volumes_available_error()
 
     if "execute" in args.commands:
-        e._run_command_on_all_servers(args.execute_command_in_bash)
+        e.run_command_on_all_servers(args.command)
 
     e.close_all_ssh_client()
