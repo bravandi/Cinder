@@ -147,6 +147,8 @@ class BaseWeightHandler(base_handler.BaseHandler):
                 obj.weight += weigher.weight_multiplier() * weight
 
         final_result = []
+        predictions = None
+
         try:
 
             experiment_id_volume_request_id = weighing_properties['request_spec']['volume_properties'][

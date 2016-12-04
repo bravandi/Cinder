@@ -8,12 +8,29 @@ from sklearn import tree
 from sklearn.model_selection import cross_val_score
 
 
+class MachineLearningAlgorithm:
+    @staticmethod
+    def RepTree():
+        return "reptree"
+
+    @staticmethod
+    def Regression():
+        return "regression"
+
+    @staticmethod
+    def J48():
+        return "j48"
+
+    @staticmethod
+    def BayesianNetwork():
+        return "bayesiannetwork"
+
 class Classification:
     current_classification = None
 
     def __init__(self,
                  classifier_name, violation_iops_classes,
-                 read_is_priority, training_experiment_id,
+                 read_is_priority, training_experiment_id, use_java_service,
                  draw_decision_tree=False, run_cross_validation=False):
 
         self.training_experiment_id = training_experiment_id
@@ -25,6 +42,7 @@ class Classification:
         self.classifiers_for_read_iops = {}
         self.classifiers_for_write_iops = {}
         self.create_time = datetime.now()
+        self.use_java_service = use_java_service
 
     @staticmethod
     def get_current_or_initialize(
@@ -38,12 +56,15 @@ class Classification:
                 classifier_name="tree",
                 violation_iops_classes=violation_iops_classes,
                 read_is_priority=read_is_priority,
-                training_experiment_id=training_experiment_id
+                training_experiment_id=training_experiment_id,
+                use_java_service=True
             )
 
-            clf.create_models(
-                training_dataset_size=training_dataset_size
-            )
+            if clf.use_java_service is False:
+
+                clf.create_models(
+                    training_dataset_size=training_dataset_size
+                )
 
             Classification.current_classification = clf
 
@@ -228,7 +249,7 @@ class Classification:
 
         return discretized_classes
 
-    def predict(self, volume_request_id):
+    def _predict_with_python_machine_learning_implimentation(self, clock, volume_request_id):
         debug_dump = "Prediction - %s\n" % str(datetime.now())
 
         classifier_predictions = {}
@@ -246,7 +267,6 @@ class Classification:
             return None
 
         volume_request = backends_current_weights[0][0]
-        clock = communication.get_volume_performance_meter_clock_calc(datetime.now())
 
         debug_dump = "%s##volume_request:%s\n" % (debug_dump, str(volume_request))
 
@@ -298,10 +318,16 @@ class Classification:
             for read_or_write_iops, prediction in predictions.iteritems():
 
                 if read_or_write_iops == "read_violation":
-                    self.pick_for_read(cinder_id=cinder_id, prediction=prediction, candidate_list=read_candidates)
+                    self.pick_for_read(
+                        cinder_id=cinder_id,
+                        prediction_probabilities=prediction["prob"].values(),
+                        candidate_list=read_candidates)
 
                 if read_or_write_iops == "write_violation":
-                    self.pick_for_write(cinder_id=cinder_id, prediction=prediction, candidate_list=write_candidates)
+                    self.pick_for_write(
+                        cinder_id=cinder_id,
+                        prediction_probabilities=prediction["prob"].values(),
+                        candidate_list=write_candidates)
 
         # pdb.set_trace()
         # max_value_write = max([value.values()[0] for key, value in write_candidates.iteritems()])
@@ -328,19 +354,77 @@ class Classification:
 
         return final_result
 
-    def pick_for_read(self, cinder_id, prediction, candidate_list):
+    def _predict_with_java_service(self, clock, volume_request_id):
 
-        prob = prediction["prob"].values()
+        try:
+            predictions = communication.get_prediction_from_java_service(
+                volume_request_id=1490,
+                clock=100,
+                algorithm=MachineLearningAlgorithm.J48()
+            )
+        except Exception as err:
 
-        if prob[self.violation_iops_classes["v1"]] >= 0.5:
+            tools.log(
+                type="ERROR",
+                code="java_service_cant_connect",
+                file_name="classification.py",
+                function_name="_predict_with_java_service",
+                message="cannot connect to the java service",
+                exception=err
+            )
+
+        predictions_list = communication.get_prediction_from_java_service(
+            volume_request_id=1490,
+            clock=100,
+            algorithm=MachineLearningAlgorithm.J48()
+        )
+
+        read_candidates = []
+        write_candidates = []
+
+        for backend_prediction in predictions_list:
+
+            self.pick_for_read(
+                cinder_id=backend_prediction["cinder_id"],
+                prediction_probabilities=backend_prediction["read_predictions"],
+                candidate_list=read_candidates)
+
+            self.pick_for_write(
+                cinder_id=backend_prediction["cinder_id"],
+                prediction_probabilities=backend_prediction["write_predictions"],
+                candidate_list=write_candidates)
+
+        final_result = np.intersect1d(read_candidates, write_candidates).tolist()
+
+        if len(final_result) == 0:
+            if self.read_is_priority:
+                final_result = read_candidates
+            else:
+                final_result = write_candidates
+
+        return final_result
+
+    def predict(self, volume_request_id):
+
+        clock = communication.get_volume_performance_meter_clock_calc(datetime.now())
+
+        if self.use_java_service is False:
+
+            return self._predict_with_python_machine_learning_implimentation(clock, volume_request_id)
+
+        else:
+
+            return self._predict_with_java_service(clock, volume_request_id)
+
+    def pick_for_read(self, cinder_id, prediction_probabilities, candidate_list):
+
+        if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
                         # prob[self.violation_iops_classes["v2"]] > 0.9:
             candidate_list.append(cinder_id)
 
-    def pick_for_write(self, cinder_id, prediction, candidate_list):
+    def pick_for_write(self, cinder_id, prediction_probabilities, candidate_list):
 
-        prob = prediction["prob"].values()
-
-        if prob[self.violation_iops_classes["v1"]] >= 0.5:
+        if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
                         # prob[self.violation_iops_classes["v2"]] > 0.9:
             candidate_list.append(cinder_id)
 

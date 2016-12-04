@@ -10,6 +10,7 @@ import pdb
 
 __server_url = 'http://CinderDevelopmentEnv:8888/'
 __server_url = 'http://10.18.75.100:8888/'
+__java_service_url = "http://10.254.252.6:81/"
 
 """
 1	Accepted
@@ -240,6 +241,28 @@ def get_prediction(volume_request_id):
     return json.loads(prediction.text)
 
 
+def get_prediction_from_java_service(clock, volume_request_id, algorithm):
+    params = {
+        "volume_request_id": volume_request_id,
+        "clock": clock,
+        "algorithm": algorithm
+    }
+
+    prediction = requests.get("%s?%s" % (__java_service_url, urllib.urlencode(params)))
+
+    return json.loads(prediction.text)
+
+
+def reset_java_service():
+    params = {
+        "reset": ""
+    }
+
+    prediction = requests.get("%s?%s" % (__java_service_url, urllib.urlencode(params)))
+
+    return prediction.text
+
+
 def volume_clock_calc(t):
     return t.strftime("%s")
 
@@ -279,4 +302,24 @@ def _parse_response(response):
 
 
 if __name__ == "__main__":
+    # http://10.254.252.6:81/?volume_request_id=1490&clock=100&algorithm=j48
+
+    # from classification import MachineLearningAlgorithm
+    #
+    # predictions_list = get_prediction_from_java_service(
+    #     volume_request_id=1490,
+    #     clock=100,
+    #     algorithm=MachineLearningAlgorithm.J48()
+    # )
+    #
+    # read_candidates = []
+    # write_candidates = []
+    #
+    # for backend_prediction in predictions_list:
+    #     print ("\n\ncinder-->" + backend_prediction["cinder_id"])
+    #
+    #     print ("read_predictions: " + str(backend_prediction["read_predictions"]))
+    #
+    #     print ("write_predictions: " + str(backend_prediction["write_predictions"]))
+
     pass
