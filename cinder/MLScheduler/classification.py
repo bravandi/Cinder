@@ -354,9 +354,10 @@ class Classification:
     def _predict_with_java_service(self, clock, volume_request_id):
 
         try:
-            predictions = communication.get_prediction_from_java_service(
-                volume_request_id=1490,
-                clock=100,
+
+            predictions_list = communication.get_prediction_from_java_service(
+                volume_request_id=volume_request_id,
+                clock=clock,
                 algorithm=MachineLearningAlgorithm.J48()
             )
         except Exception as err:
@@ -370,11 +371,7 @@ class Classification:
                 exception=err
             )
 
-        predictions_list = communication.get_prediction_from_java_service(
-            volume_request_id=1490,
-            clock=100,
-            algorithm=MachineLearningAlgorithm.J48()
-        )
+            return None
 
         read_candidates = []
         write_candidates = []
@@ -419,13 +416,17 @@ class Classification:
     def pick_for_read(self, cinder_id, prediction_probabilities, candidate_list):
 
         if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
-                        # prob[self.violation_iops_classes["v2"]] > 0.9:
             candidate_list.append(cinder_id)
+
+        if prediction_probabilities[self.violation_iops_classes["v2"]] >= 0.5:
+            candidate_list.append(cinder_id)
+
 
     def pick_for_write(self, cinder_id, prediction_probabilities, candidate_list):
 
-        if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
-                        # prob[self.violation_iops_classes["v2"]] > 0.9:
+        if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.6:
+            candidate_list.append(cinder_id)
+        if prediction_probabilities[self.violation_iops_classes["v2"]] >= 0.7:
             candidate_list.append(cinder_id)
 
 

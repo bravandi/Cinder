@@ -90,7 +90,7 @@ class RemoteMachine():
         Experiment.run_command(
             ssh_client=remote_machine_instance.ssh_client,
             command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo\"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
-            command, tools.get_path_expanduser("command_workload"))
+                command, tools.get_path_expanduser("command_workload"))
         )
 
         Experiment.run_command(
@@ -244,12 +244,21 @@ class Experiment:
 
             # why remove
             # self._run_command(server, "sudo rm -r -d %s" % tools.get_path_expanduser("~/MLSchedulerAgent/"))
+
             ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
             if ret["retval"] == 128:
                 self._run_command(
                     server,
-                    "sudo git -C %s reset --hard; sudo git -C %s pull" %
-                    (tools.get_path_expanduser("~/MLSchedulerAgent/"), tools.get_path_expanduser("~/MLSchedulerAgent/"))
+                    # "sudo git -C %s reset --hard; sudo git -C %s pull" %
+                    "cd %s; git reset --hard" % tools.get_path_expanduser("~/MLSchedulerAgent")
+                    # % (tools.get_path_expanduser("~/MLSchedulerAgent/"), tools.get_path_expanduser("~/MLSchedulerAgent/"))
+                )
+
+
+
+                self._run_command(
+                    server,
+                    "cd %s; git pull" % tools.get_path_expanduser("~/MLSchedulerAgent")
                 )
 
             self._run_command(server, "sudo echo '%s' > %s" % (server["id"], tools.get_path_expanduser("~/tenantid")))
@@ -343,7 +352,7 @@ class Experiment:
             remote_machine = RemoteMachine(server_ip=server["ip"])
 
             self.remote_machine_list.append(remote_machine)
-            
+
             remote_machine.start(workload_args=workload_args, performance_args=performance_args)
 
         while True:
@@ -368,7 +377,6 @@ class Experiment:
                 break
 
             if command in ["restart", "r"]:
-
                 self.run_command_on_all_servers("python experiment.py execute --command 'sudo reboot'")
 
                 break
@@ -416,13 +424,15 @@ def args_load_defaults(args):
 
     if args.debug_server_ip is not None:
         args.debug_run_only_one_server = True
+        args.print_output = True
+        args.print_output_if_have_error = True
     else:
         args.debug_run_only_one_server = False
 
     if args.performance_fio_test_name is None:
         args.performance_fio_test_name = "resource_evaluation.fio"
     if args.performance_terminate_if_takes is None:
-        args.performance_terminate_if_takes = 25
+        args.performance_terminate_if_takes = 15
     if args.performance_restart_gap is None:
         args.performance_restart_gap = 25
     if args.performance_restart_gap_after_terminate is None:
@@ -439,15 +449,15 @@ def args_load_defaults(args):
     if args.workload_request_write_iops is None:
         args.workload_request_write_iops = "[[400, 500, 600], [0.3, 0.4, 0.3]]"
     if args.workload_delay_between_storage_workload_generation is None:
-        args.workload_delay_between_storage_workload_generation = "[[2], [1.0]]"
+        args.workload_delay_between_storage_workload_generation = "[[5], [1.0]]"
     if args.workload_delay_between_create_volume_generation is None:
         args.workload_delay_between_create_volume_generation = "[[2], [1.0]]"
     if args.workload_max_number_volumes is None:
-        args.workload_max_number_volumes = "[[6], [1.0]]"
+        args.workload_max_number_volumes = "[[5], [1.0]]"
     if args.workload_volume_life_seconds is None:
-        args.workload_volume_life_seconds = "[[40], [1.0]]"
+        args.workload_volume_life_seconds = "[[500], [1.0]]"
     if args.workload_volume_size is None:
-        args.workload_volume_size = "[[5], [1.0]]"
+        args.workload_volume_size = "[[9], [1.0]]"
 
     # args.debug_run_only_one_server
     # args.debug_run_only_one_server
@@ -495,7 +505,7 @@ if __name__ == '__main__':
     parser.add_argument('--print_output_if_have_error', default='True', metavar='', type=str,
                         help='print output if there is an error in execute command on the hosts. default=False')
 
-    parser.add_argument('--print_output', default='True', metavar='', type=str,
+    parser.add_argument('--print_output', default='False', metavar='', type=str,
                         help='print output if there is an error in execute command on the hosts. default=False')
 
     parser.add_argument('--new', default='False', metavar='', type=str,
@@ -577,6 +587,8 @@ if __name__ == '__main__':
 
     args_load_defaults(args)
 
+    args_has_init_initially = "init" in args.commands
+
     if "shutdown" in args.commands:
         args.commands = ["kill-workload", "kill-performance", "det-del"]
         args.debug_server_ip = ''
@@ -594,7 +606,7 @@ if __name__ == '__main__':
     if "create-experiment" in args.commands:
         args.new = True
 
-    if args.debug_run_only_one_server:
+    if args.debug_run_only_one_server and args_has_init_initially is False:
         args.commands.remove("init")
 
     workload_args = {
@@ -650,6 +662,7 @@ if __name__ == '__main__':
     )
 
     if "init" in args.commands:
+
         e.initialize_commands()
         pass
 
