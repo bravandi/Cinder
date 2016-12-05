@@ -253,8 +253,13 @@ class Handler(BaseHTTPRequestHandler):
             if parameters.has_key("exception_message"):
                 exception_message = parameters["exception_message"].value
 
+            volume_cinder_id = ''
+            if parameters.has_key("volume_cinder_id"):
+                volume_cinder_id = parameters["volume_cinder_id"].value
+
             tools.log(
                 experiment_id=long(parameters["experiment_id"].value),
+                volume_cinder_id=volume_cinder_id,
                 app=parameters["app"].value,
                 type=type,
                 code=code,

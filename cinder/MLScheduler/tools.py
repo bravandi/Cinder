@@ -108,6 +108,7 @@ def get_cinder_backends():
 def log(
         message,
         experiment_id=0,  # the database will insert the latest experiment id
+        volume_cinder_id='',
         type='',
         app='MLScheduler',
         code='',
@@ -123,6 +124,7 @@ def log(
 
     args = (
         experiment_id,
+        volume_cinder_id,
         app,
         type,
         code,
