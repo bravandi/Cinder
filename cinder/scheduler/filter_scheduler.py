@@ -92,7 +92,8 @@ class FilterScheduler(driver.Scheduler):
             experiment_id_schedule_response_id[0] = int(experiment_id_schedule_response_id[0])
             experiment_id_schedule_response_id[1] = int(experiment_id_schedule_response_id[1])
         except Exception as err:
-            pdb.set_trace()
+            # pdb.set_trace()
+            pass
 
         if not weighed_host:
             try:
@@ -102,7 +103,8 @@ class FilterScheduler(driver.Scheduler):
                     response_id=mlscheduler_communication.ScheduleResponseType.rejected_no_weighed_host())
 
             except Exception as err:
-                pdb.set_trace()
+                # pdb.set_trace()
+                pass
 
             raise exception.NoValidHost(reason=_("No weighed hosts available"))
 
@@ -112,8 +114,8 @@ class FilterScheduler(driver.Scheduler):
                 volume_request_id=experiment_id_schedule_response_id[1],
                 response_id=mlscheduler_communication.ScheduleResponseType.accepted())
         except Exception as err:
-
-            pdb.set_trace()
+            # pdb.set_trace()
+            pass
 
         host = weighed_host.obj.host
         volume_id = request_spec['volume_id']
@@ -138,7 +140,8 @@ class FilterScheduler(driver.Scheduler):
                 schedule_response=schedule_response_id,
                 capacity=request_spec['volume']['size'])
         except Exception as err:
-            pdb.set_trace()
+            # pdb.set_trace()
+            pass
 
     def host_passes_filters(self, context, host, request_spec,
                             filter_properties):

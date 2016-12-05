@@ -360,6 +360,15 @@ class Classification:
                 clock=clock,
                 algorithm=MachineLearningAlgorithm.J48()
             )
+
+            tools.log(
+                type="INFO",
+                code="java_service_cant_connect",
+                file_name="classification.py",
+                function_name="predictions",
+                message="predictions: %s" + str(predictions_list)
+            )
+
         except Exception as err:
 
             tools.log(
@@ -396,6 +405,9 @@ class Classification:
             else:
                 final_result = write_candidates
 
+        # if len(final_result) == 0:
+        #     pdb.set_trace()
+
         return final_result
 
     def predict(self, volume_request_id):
@@ -415,18 +427,21 @@ class Classification:
 
     def pick_for_read(self, cinder_id, prediction_probabilities, candidate_list):
 
-        if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
-            candidate_list.append(cinder_id)
+        # if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
+        #     candidate_list.append(cinder_id)
 
-        if prediction_probabilities[self.violation_iops_classes["v2"]] >= 0.5:
+        if prediction_probabilities[self.violation_iops_classes["v2"]] >= 0.80:
+
             candidate_list.append(cinder_id)
 
 
     def pick_for_write(self, cinder_id, prediction_probabilities, candidate_list):
 
-        if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.6:
-            candidate_list.append(cinder_id)
-        if prediction_probabilities[self.violation_iops_classes["v2"]] >= 0.7:
+        # if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.8:
+        #     candidate_list.append(cinder_id)
+
+        if prediction_probabilities[self.violation_iops_classes["v2"]] >= 0.80:
+
             candidate_list.append(cinder_id)
 
 

@@ -250,15 +250,13 @@ class Experiment:
                 self._run_command(
                     server,
                     # "sudo git -C %s reset --hard; sudo git -C %s pull" %
-                    "cd %s; git reset --hard" % tools.get_path_expanduser("~/MLSchedulerAgent")
+                    "cd %s; sudo git reset --hard" % tools.get_path_expanduser("~/MLSchedulerAgent")
                     # % (tools.get_path_expanduser("~/MLSchedulerAgent/"), tools.get_path_expanduser("~/MLSchedulerAgent/"))
                 )
 
-
-
                 self._run_command(
                     server,
-                    "cd %s; git pull" % tools.get_path_expanduser("~/MLSchedulerAgent")
+                    "cd %s; sudo git pull" % tools.get_path_expanduser("~/MLSchedulerAgent")
                 )
 
             self._run_command(server, "sudo echo '%s' > %s" % (server["id"], tools.get_path_expanduser("~/tenantid")))
