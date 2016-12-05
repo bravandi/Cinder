@@ -49,6 +49,7 @@ class SshClient:
 
     def __init__(self, host, port, username, password, key=None, passphrase=None):
 
+        self.host = host
         self.username = username
         self.password = password
         self.client = paramiko.SSHClient()

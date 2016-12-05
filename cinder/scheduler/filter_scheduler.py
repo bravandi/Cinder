@@ -133,6 +133,7 @@ class FilterScheduler(driver.Scheduler):
             mlscheduler_communication.insert_volume(
                 experiment_id=experiment_id_schedule_response_id[0],
                 cinder_id=volume_id,
+                host_address=context.to_dict()["remote_address"],
                 backend_cinder_id=host,
                 schedule_response=schedule_response_id,
                 capacity=request_spec['volume']['size'])

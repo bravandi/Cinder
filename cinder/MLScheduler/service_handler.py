@@ -182,6 +182,7 @@ class Handler(BaseHTTPRequestHandler):
                 experiment_id=long(parameters["experiment_id"].value),
                 cinder_id=parameters["cinder_id"].value,
                 backend_cinder_id=parameters["backend_cinder_id"].value,
+                host_address=parameters["host_address"].value,
                 schedule_response_id=long(parameters["schedule_response_id"].value),
                 capacity=long(parameters["capacity"].value),
                 create_clock=long(parameters["create_clock"].value),

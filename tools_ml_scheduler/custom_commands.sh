@@ -34,6 +34,10 @@ function c_killVolume(){
 	ps -ef | grep cinder-volume | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
+function c_killExperiment(){
+	ps -ef | grep experiment | grep -v grep | awk '{print $2}' | xargs kill -9
+}
+
 function cp_run(){
 	cp_print "$2 running" "$1";
 
@@ -49,12 +53,20 @@ function cp_run(){
 	fi
 }
 
+function c_rebootHosts(){
+     python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo reboot'
+}
+
 function c_getProc(){
 	ps aux | grep $1
 }
 
 function c_getCinderProc(){
 	ps aux | grep cinder
+}
+
+function c_getExperiment(){
+	ps aux | grep experiment
 }
 
 function c_getPyCharmProc(){

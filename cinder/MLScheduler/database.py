@@ -302,6 +302,7 @@ def insert_volume(
         cinder_id,  # VARCHAR(36)
         backend_cinder_id,  # VARCHAR(36),
         schedule_response_id,  # bigint,
+        host_address,
         capacity,  # INT(11),
         create_clock,  # INT(11),
         create_time  # DATETIME
@@ -315,6 +316,7 @@ def insert_volume(
         cinder_id,
         backend_cinder_id,  # VARCHAR(36),
         schedule_response_id,  # bigint,
+        host_address,
         capacity,  # INT(11),
         create_clock,  # INT(11),
         create_time  # datetime

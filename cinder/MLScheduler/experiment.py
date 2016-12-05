@@ -242,7 +242,8 @@ class Experiment:
                     server,
                     "echo '%s\t%s' | sudo tee --append /etc/hosts" % (server["ip"], server["name"]))
 
-            self._run_command(server, "sudo rm -r -d %s" % tools.get_path_expanduser("~/MLSchedulerAgent/"))
+            # why remove
+            # self._run_command(server, "sudo rm -r -d %s" % tools.get_path_expanduser("~/MLSchedulerAgent/"))
             ret = self._run_command(server, 'sudo git clone https://github.com/bravandi/MLSchedulerAgent.git')
             if ret["retval"] == 128:
                 self._run_command(
@@ -363,6 +364,12 @@ class Experiment:
                 e.kill_workload_generator_all_servers()
 
                 e.detach_delete_all_servers_volumes()
+
+                break
+
+            if command in ["restart", "r"]:
+
+                self.run_command_on_all_servers("python experiment.py execute --command 'sudo reboot'")
 
                 break
 
