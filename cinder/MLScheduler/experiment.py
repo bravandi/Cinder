@@ -89,7 +89,7 @@ class RemoteMachine():
 
         Experiment.run_command(
             ssh_client=remote_machine_instance.ssh_client,
-            command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo\"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
+            command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo \"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
                 command, tools.get_path_expanduser("command_workload"))
         )
 
@@ -153,7 +153,10 @@ class Experiment:
                     capacity=100,
                 )
 
-            communication.reset_java_service()
+            try:
+                communication.reset_java_service()
+            except:
+                raise Exception("Cannot communicate with the java service handler.")
 
             tools.log("Created a new experiment. id: " + str(ex_id), insert_db=False)
 

@@ -10,7 +10,7 @@ import pdb
 
 __server_url = 'http://CinderDevelopmentEnv:8888/'
 __server_url = 'http://10.18.75.100:8888/'
-__java_service_url = "http://10.254.252.6:81/"
+__java_service_url = "http://10.254.252.4:81/"
 
 """
 1	Accepted
