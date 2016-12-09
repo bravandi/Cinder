@@ -76,7 +76,7 @@ class RemoteMachine():
             args.append(str(k))
             args.append(str(v))
 
-        command = "sudo python %s start %s >%s 2>%s" % \
+        command = "sudo python %s start %s >>%s 2>>%s" % \
                   (
                       tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
                       " ".join(args),
