@@ -58,7 +58,11 @@ function c_rebootHosts(){
 }
 
 function c_delErrVolumes(){
-     python ~/cinder/cinder/MLScheduler/experiment.py del-avail-err
+    python ~/cinder/cinder/MLScheduler/experiment.py del-avail-err
+}
+
+function c_detachDel(){
+    python ~/cinder/cinder/MLScheduler/experiment.py det-del
 }
 
 function c_getProc(){
