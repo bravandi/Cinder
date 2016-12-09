@@ -57,6 +57,10 @@ function c_rebootHosts(){
      python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo reboot'
 }
 
+function c_delErrVolumes(){
+     python ~/cinder/cinder/MLScheduler/experiment.py del-avail-err
+}
+
 function c_getProc(){
 	ps aux | grep $1
 }

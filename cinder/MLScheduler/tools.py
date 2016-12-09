@@ -39,6 +39,19 @@ def delete_volumes_available_error():
     cinder = get_cinder_client()
 
     for volume in cinder.volumes.list():
+
+        if volume.status == 'creating':
+            cinder.volumes.reset_state(volume.id, 'error')
+
+        if volume.status == 'deleting':
+            cinder.volumes.reset_state(volume.id, 'error')
+
+        if volume.status == 'detaching':
+            # cinder.volumes.reset_state(volume.id, 'error')
+            cinder.volumes.reset_state(volume.id, 'error', 'detached')
+
+    for volume in cinder.volumes.list():
+
         if volume.status == 'available' or volume.status == 'error':
             cinder.volumes.delete(volume.id)
 

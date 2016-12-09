@@ -378,7 +378,7 @@ class Experiment:
                 break
 
             if command in ["restart", "r"]:
-                self.run_command_on_all_servers("python experiment.py execute --command 'sudo reboot'")
+                self.run_command_on_all_servers("sudo reboot")
 
                 break
 
@@ -633,7 +633,7 @@ if __name__ == '__main__':
     }
 
     if "del-avail-err" in args.commands:
-        tools.log("If run within shutdown process might cause error. need to investigate.", insert_db=False)
+
         tools.delete_volumes_available_error()
 
         sys.exit()
@@ -688,7 +688,7 @@ if __name__ == '__main__':
 
     if "det-del" in args.commands:
         e.detach_delete_all_servers_volumes()
-        # tools.delete_volumes_available_error()
+        tools.delete_volumes_available_error()
 
     if "execute" in args.commands:
         e.run_command_on_all_servers(args.command)
