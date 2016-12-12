@@ -38,6 +38,10 @@ function c_killExperiment(){
 	ps -ef | grep experiment | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
+function c_getVolCount(){
+	cinder list | grep false |wc
+}
+
 function cp_run(){
 	cp_print "$2 running" "$1";
 

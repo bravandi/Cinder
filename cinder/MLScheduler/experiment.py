@@ -78,10 +78,10 @@ class RemoteMachine():
 
         command = "sudo python %s start %s >>%s 2>>%s" % \
                   (
-                      tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
+                      tools.get_path_for_tenant("~/MLSchedulerAgent/workload_generator.py"),
                       " ".join(args),
-                      tools.get_path_expanduser("~/workload.out"),
-                      tools.get_path_expanduser("~/workload.err")
+                      tools.get_path_for_tenant("~/workload.out"),
+                      tools.get_path_for_tenant("~/workload.err")
                   )
 
         # todo save the command in database will be handy for running test experiments
@@ -90,7 +90,7 @@ class RemoteMachine():
         Experiment.run_command(
             ssh_client=remote_machine_instance.ssh_client,
             command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo \"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
-                command, tools.get_path_expanduser("command_workload"))
+                command, tools.get_path_for_tenant("~/command_workload"))
         )
 
         Experiment.run_command(
@@ -231,7 +231,7 @@ class Experiment:
 
         for server in self.servers:
 
-            ret = self._run_command(server, "ls " + tools.get_path_expanduser("~"))
+            ret = self._run_command(server, "ls " + tools.get_path_for_tenant("~"))
 
             # if "fio-2.0.9\n" not in ret["out"]:
             #     self._run_command(server, "sudo wget https://github.com/Crowd9/Benchmark/raw/master/fio-2.0.9.tar.gz")
@@ -253,27 +253,27 @@ class Experiment:
                 self._run_command(
                     server,
                     # "sudo git -C %s reset --hard; sudo git -C %s pull" %
-                    "cd %s; sudo git reset --hard" % tools.get_path_expanduser("~/MLSchedulerAgent")
+                    "cd %s; sudo git reset --hard" % tools.get_path_for_tenant("~/MLSchedulerAgent")
                     # % (tools.get_path_expanduser("~/MLSchedulerAgent/"), tools.get_path_expanduser("~/MLSchedulerAgent/"))
                 )
 
                 self._run_command(
                     server,
-                    "cd %s; sudo git pull" % tools.get_path_expanduser("~/MLSchedulerAgent")
+                    "cd %s; sudo git pull" % tools.get_path_for_tenant("~/MLSchedulerAgent")
                 )
 
-            self._run_command(server, "sudo echo '%s' > %s" % (server["id"], tools.get_path_expanduser("~/tenantid")))
+            self._run_command(server, "sudo echo '%s' > %s" % (server["id"], tools.get_path_for_tenant("~/tenantid")))
 
             self._run_command(server, "sudo echo '%s@%s' > %s" %
-                              (server["name"], server["ip"], tools.get_path_expanduser("~/tenant_description")))
+                              (server["name"], server["ip"], tools.get_path_for_tenant("~/tenant_description")))
 
             self._run_command(server, "sudo mkdir /media/")
 
             self._run_command(server, "sudo rm -r -d /media/*")
 
             self._run_command(server, "sudo rm %s;sudo rm %s" %
-                              (tools.get_path_expanduser("*.err"),
-                               tools.get_path_expanduser("*.out")))
+                              (tools.get_path_for_tenant("*.err"),
+                               tools.get_path_for_tenant("*.out")))
 
     def _run_command(self, server, command):
         return Experiment.run_command(
@@ -341,9 +341,9 @@ class Experiment:
         self.run_command_on_all_servers(
             "sudo nohup python %s det-del >%s 2>%s &" %
             (
-                tools.get_path_expanduser("~/MLSchedulerAgent/workload_generator.py"),
-                tools.get_path_expanduser("~/detach_delete_all_servers_volumes.out"),
-                tools.get_path_expanduser("~/detach_delete_all_servers_volumes.err"),
+                tools.get_path_for_tenant("~/MLSchedulerAgent/workload_generator.py"),
+                tools.get_path_for_tenant("~/detach_delete_all_servers_volumes.out"),
+                tools.get_path_for_tenant("~/detach_delete_all_servers_volumes.err"),
             )
         )
 

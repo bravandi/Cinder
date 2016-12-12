@@ -40,7 +40,7 @@ def delete_volumes_available_error():
 
     for volume in cinder.volumes.list():
 
-        if volume.status == 'creating':
+        if volume.status == 'creating' or volume.status == 'error deleting':
             cinder.volumes.reset_state(volume.id, 'error')
 
         if volume.status == 'deleting':
@@ -100,8 +100,9 @@ class SshClient:
                 'retval': stdout.channel.recv_exit_status()}
 
 
-def read_file(path):
-    with open(os.path.realpath(path), 'r') as myfile:
+def read_file(file_name, hard_path="~/cinder/cinder/MLScheduler/"):
+    # os.path.realpath(
+    with open(os.path.expanduser(hard_path + file_name), 'r') as myfile:
         data = myfile.read()
 
     myfile.close()
@@ -153,7 +154,7 @@ def log(
     if exception != '':
         exception = "\n   ERR: " + str(exception)
 
-    msg = "\n {%s} %s-%s [%s - %s] %s. [%s] %s\n" \
+    msg = "\n {%s} <%s>-%s [%s - %s] %s. [%s] %s\n" \
           % (app, type, code, function_name, file_name, message, create_time.strftime("%Y-%m-%d %H:%M:%S"), str(exception))
 
     print (msg)
@@ -191,7 +192,7 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 
-def get_path_expanduser(var=""):
+def get_path_for_tenant(var=""):
 
     if var.startswith("~"):
         var = var[1:]
