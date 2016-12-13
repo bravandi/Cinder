@@ -86,10 +86,10 @@ function c_getPyCharmProc(){
 }
 
 function c_source(){
-	source /root/commands.sh
+	source /root/cinder/tools_ml_scheduler/custom_commands.sh
 }
 
-function c_enterVenv(){
+function c_activateVenv(){
 	source /root/cinder/.venv/bin/activate
 }
 
@@ -104,9 +104,16 @@ export cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-schedu
 
 function c_runApi(){
 #/usr/bin/python
-    cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+    #cv_cmd="/root/cinder/tools/with_venv.sh /root/cinder/.venv/bin/cinder-api --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
 
     cv_cmd="/root/cinder/tools/with_venv.sh python /root/cinder/cinder-api.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log"
+
+    #source /root/cinder/.venv/bin/activate
+
+    #until /root/cinder/tools/with_venv.sh python /root/cinder/cinder-api.py --config-file=/root/cinder/.venv/etc/cinder/cinder.conf --log-file=/root/cinder/.venv/var/log/cinder/cinder-api.log; do
+    #    echo "workload_generator crashed with exit code $?.  Respawning.." >&2
+        sleep 1
+    #done
 
 	cp_run "$cv_cmd" $1
 }
