@@ -50,13 +50,14 @@ class RemoteMachine():
     def is_alive(self):
 
         if self.proc is None:
-            tools.log(
-                app="MLScheduler",
-                type="ERROR",
-                code="exp_null_is_alive",
-                file_name="experiment.py",
-                function_name="is_alive",
-                message="proc is null cant call is_alive(). maybe RemoteMachine.start() is not called.")
+            # todo PROBABLY not a problem. So I comment it.
+            # tools.log(
+            #     app="MLScheduler",
+            #     type="WARNING",
+            #     code="exp_null_is_alive",
+            #     file_name="experiment.py",
+            #     function_name="is_alive",
+            #     message="proc is null cant call is_alive(). maybe RemoteMachine.start() is not called.")
 
             return False
 
@@ -412,6 +413,7 @@ class Experiment:
 
 
 def args_load_defaults(args):
+    args.save_info_logs = tools.str2bool(args.save_info_logs)
     args.debug_run_only_one_server = tools.str2bool(args.debug_run_only_one_server)
     args.print_output_if_have_error = tools.str2bool(args.print_output_if_have_error)
     args.print_output = tools.str2bool(args.print_output)
@@ -581,6 +583,9 @@ if __name__ == '__main__':
                         type=str, required=False,
                         help='life time of a volume. example= "[[5], [1.0]]"')
 
+    parser.add_argument('--save_info_logs', type=str, metavar='', required=False, default='False',
+                        help='save INFO logs in database ?')
+
     is_shutdown = False
     # END WORKLOAD GENERATOR
 
@@ -613,6 +618,7 @@ if __name__ == '__main__':
     workload_args = {
         "--fio_test_name": args.workload_fio_test_name,
 
+        "--save_info_logs": str(args.save_info_logs),
         "--wait_after_volume_rejected": json.dumps(args.workload_wait_after_volume_rejected),
         "--request_read_iops": json.dumps(args.workload_request_read_iops),
         "--request_write_iops": json.dumps(args.workload_request_write_iops),
