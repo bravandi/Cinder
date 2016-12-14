@@ -77,7 +77,8 @@ class RemoteMachine():
             args.append(str(k))
             args.append(str(v))
 
-        command = "sudo python %s start %s >>%s 2>>%s" % \
+        # if using 'until' then: command = "sudo python %s start %s >>%s 2>>%s" % \
+        command = "sudo python %s start %s >%s 2>%s" % \
                   (
                       tools.get_path_for_tenant("~/MLSchedulerAgent/workload_generator.py"),
                       " ".join(args),
@@ -90,8 +91,9 @@ class RemoteMachine():
 
         Experiment.run_command(
             ssh_client=remote_machine_instance.ssh_client,
-            command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo \"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
-                command, tools.get_path_for_tenant("~/command_workload"))
+            # command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo \"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
+            #     command, tools.get_path_for_tenant("~/command_workload"))
+            command=command
         )
 
         Experiment.run_command(
@@ -663,7 +665,9 @@ if __name__ == '__main__':
             "training_experiment_id": args.training_experiment_id,
             "read_is_priority": args.read_is_priority,
             "is_training": is_training,
-            "min_required_vpm_records": 100,  # used in [get_training_dataset] stored procedure
+            "min_required_vpm_records": 150,  # used in [get_training_dataset] stored procedure
+            "volume_attach_time_out": 35,
+            "wait_volume_status_timeout": 15,
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": args.mod_normalized_clock_for_feature_generation,
