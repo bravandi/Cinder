@@ -1,3 +1,4 @@
+import time
 import paramiko
 from StringIO import StringIO
 import pdb
@@ -35,12 +36,12 @@ def get_nova_client():
     return n_client.Client(2, session=get_session())
 
 
-def delete_volumes_available_error():
+def delete_volumes_available_error(delete_available=False):
     cinder = get_cinder_client()
 
     for volume in cinder.volumes.list():
 
-        if volume.status == 'creating' or volume.status == 'error deleting':
+        if volume.status == 'creating' or 'error' in volume.status:
             cinder.volumes.reset_state(volume.id, 'error')
 
         if volume.status == 'deleting':
@@ -50,9 +51,11 @@ def delete_volumes_available_error():
             # cinder.volumes.reset_state(volume.id, 'error')
             cinder.volumes.reset_state(volume.id, 'error', 'detached')
 
+    time.sleep(4)
+
     for volume in cinder.volumes.list():
 
-        if volume.status == 'available' or volume.status == 'error':
+        if (delete_available is True and volume.status == 'available') or volume.status == 'error':
             cinder.volumes.delete(volume.id)
 
 
@@ -155,7 +158,8 @@ def log(
         exception = "\n   ERR: " + str(exception)
 
     msg = "\n {%s} <%s>-%s [%s - %s] %s. [%s] %s\n" \
-          % (app, type, code, function_name, file_name, message, create_time.strftime("%Y-%m-%d %H:%M:%S"), str(exception))
+          % (
+          app, type, code, function_name, file_name, message, create_time.strftime("%Y-%m-%d %H:%M:%S"), str(exception))
 
     print (msg)
 
@@ -193,7 +197,6 @@ def str2bool(v):
 
 
 def get_path_for_tenant(var=""):
-
     if var.startswith("~"):
         var = var[1:]
 

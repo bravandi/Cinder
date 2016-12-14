@@ -487,7 +487,7 @@ if __name__ == '__main__':
 
     parser.add_argument('commands', type=str, nargs="+",
                         choices=[
-                            'start', 'shutdown', 'start-new', 'workload', 'del-avail-err',
+                            'start', 'shutdown', 'start-new', 'workload', 'del-avail-err', 'del-err',
                             'performance', 'det-del', 'kill-workload',
                             'kill-performance', 'execute', 'init', 'create-experiment'],
                         help=
@@ -639,9 +639,13 @@ if __name__ == '__main__':
     }
 
     if "del-avail-err" in args.commands:
+        print ("del-avail-err")
+        tools.delete_volumes_available_error(delete_available=True)
+        sys.exit()
 
-        tools.delete_volumes_available_error()
-
+    if "del-err" in args.commands:
+        print ("del-err")
+        tools.delete_volumes_available_error(delete_available=False)
         sys.exit()
 
     is_training = True
@@ -659,6 +663,7 @@ if __name__ == '__main__':
             "training_experiment_id": args.training_experiment_id,
             "read_is_priority": args.read_is_priority,
             "is_training": is_training,
+            "min_required_vpm_records": 100,  # used in [get_training_dataset] stored procedure
             "workload_args": workload_args,
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": args.mod_normalized_clock_for_feature_generation,
@@ -694,7 +699,7 @@ if __name__ == '__main__':
 
     if "det-del" in args.commands:
         e.detach_delete_all_servers_volumes()
-        tools.delete_volumes_available_error()
+        tools.delete_volumes_available_error(delete_available=True)
 
     if "execute" in args.commands:
         e.run_command_on_all_servers(args.command)
