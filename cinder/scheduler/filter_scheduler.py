@@ -37,6 +37,7 @@ LOG = logging.getLogger(__name__)
 
 class FilterScheduler(driver.Scheduler):
     """Scheduler that can be used for filtering and weighing."""
+
     def __init__(self, *args, **kwargs):
         super(FilterScheduler, self).__init__(*args, **kwargs)
         self.cost_function_cache = None
@@ -85,7 +86,8 @@ class FilterScheduler(driver.Scheduler):
     def schedule_create_volume(self, context, request_spec, filter_properties):
         weighed_host = self._schedule(context, request_spec,
                                       filter_properties)
-
+        experiment_id_schedule_response_id = None
+        schedule_response_id = None
         # use displan name of volume to transfer the volume_request id
         try:
             experiment_id_schedule_response_id = request_spec['volume_properties']['display_name'].split(",")
@@ -156,8 +158,8 @@ class FilterScheduler(driver.Scheduler):
         volume_id = request_spec.get('volume_id', '??volume_id missing??')
         raise exception.NoValidHost(reason=_('Cannot place volume %(id)s on '
                                              '%(host)s') %
-                                    {'id': volume_id,
-                                     'host': host})
+                                           {'id': volume_id,
+                                            'host': host})
 
     def find_retype_host(self, context, request_spec, filter_properties=None,
                          migration_policy='never'):
@@ -174,8 +176,8 @@ class FilterScheduler(driver.Scheduler):
         if not weighed_hosts:
             raise exception.NoValidHost(reason=_('No valid hosts for volume '
                                                  '%(id)s with type %(type)s') %
-                                        {'id': request_spec['volume_id'],
-                                         'type': request_spec['volume_type']})
+                                               {'id': request_spec['volume_id'],
+                                                'type': request_spec['volume_type']})
 
         for weighed_host in weighed_hosts:
             host_state = weighed_host.obj
@@ -202,8 +204,8 @@ class FilterScheduler(driver.Scheduler):
                                                  'volume %(id)s with type '
                                                  '%(type)s, migration not '
                                                  'allowed') %
-                                        {'id': request_spec['volume_id'],
-                                         'type': request_spec['volume_type']})
+                                               {'id': request_spec['volume_id'],
+                                                'type': request_spec['volume_type']})
 
         top_host = self._choose_top_host(weighed_hosts, request_spec)
         return top_host.obj
@@ -288,8 +290,8 @@ class FilterScheduler(driver.Scheduler):
             raise exception.NoValidHost(
                 reason=_("Exceeded max scheduling attempts %(max_attempts)d "
                          "for volume %(volume_id)s") %
-                {'max_attempts': max_attempts,
-                 'volume_id': volume_id})
+                       {'max_attempts': max_attempts,
+                        'volume_id': volume_id})
 
     def _get_weighted_candidates(self, context, request_spec,
                                  filter_properties=None):

@@ -93,7 +93,7 @@ class RemoteMachine():
             ssh_client=remote_machine_instance.ssh_client,
             # command="echo 'until %s; do\n\tcode=\"$?\"\n\techo \"workload_generator crashed with exit code $code.  Respawning..\" >&2\n\tif [ $code = \"137\" ]; then\n\t\techo \"done\"\n\t\tbreak\n\tfi\n\tsleep 1\ndone' > %s.sh" % (
             #     command, tools.get_path_for_tenant("~/command_workload"))
-            command=command
+            command="echo '%s' > %s" % (command, tools.get_path_for_tenant("~/command_workload.sh"))
         )
 
         Experiment.run_command(
@@ -588,6 +588,9 @@ if __name__ == '__main__':
     parser.add_argument('--save_info_logs', type=str, metavar='', required=False, default='False',
                         help='save INFO logs in database ?')
 
+    parser.add_argument('--description', type=str, metavar='', required=True, default='',
+                        help='a description such as: sequential read training')
+
     is_shutdown = False
     # END WORKLOAD GENERATOR
 
@@ -662,6 +665,8 @@ if __name__ == '__main__':
         print_output_if_have_error=args.print_output_if_have_error,
         print_output=args.print_output,
         config=json.dumps({
+            # TODO add a switch for it
+            "description": args.description,
             "training_experiment_id": args.training_experiment_id,
             "read_is_priority": args.read_is_priority,
             "is_training": is_training,
