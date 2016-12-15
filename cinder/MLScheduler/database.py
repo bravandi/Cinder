@@ -1,12 +1,10 @@
 import mysql.connector
 from datetime import datetime
-from mysql.connector import errorcode
 import MySQLdb
 import MySQLdb.cursors
 import MySQLdb.converters
 import pdb
 import tools
-
 
 # from decimal import Decimal
 # from mysql.connector import MySQLConnection, Error
@@ -277,9 +275,9 @@ def insert_backend(
         cinder_id,  # VARCHAR(36),
         experiment_id,  # bigint,
         capacity,  # INT(11),
-        is_online, # bool
-        description, # MEDIUMTEXT
-        ml_model_Path, # VARCHAR(1000)
+        is_online,  # bool
+        description,  # MEDIUMTEXT
+        ml_model_Path,  # VARCHAR(1000)
         create_clock,  # INT(11),
         create_time  # DATETIME
 ):

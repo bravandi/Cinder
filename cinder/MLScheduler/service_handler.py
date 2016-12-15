@@ -8,7 +8,7 @@ import json
 import database
 import classification
 import communication
-
+from datetime import datetime
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -37,12 +37,34 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
-        result = self._handle_request(parsed_path.path, urlparse.parse_qs(parsed_path.query))
+        result = self._handle_request(
+            parsed_path.path,
+            Handler.normalize_times_clocks(urlparse.parse_qs(parsed_path.query)))
 
         # todo convert any datetime variable to string otherwise wont serialize
         self.wfile.write(json.dumps(result))
 
         return
+
+    @staticmethod
+    def normalize_times_clocks(args):
+        args = dict(args)
+
+        now = datetime.now()
+        current_time = str(now)
+        current_clock = communication.volume_clock_calc(now)
+
+        if "create_time" in args:
+            args["create_time"] = cgi.MiniFieldStorage("create_time", current_time)
+        if "create_clock" in args:
+            args["create_clock"] = cgi.MiniFieldStorage("create_clock", current_clock)
+
+        if "delete_time" in args:
+            args["delete_time"] = cgi.MiniFieldStorage("delete_time", current_time)
+        if "delete_clock" in args:
+            args["delete_clock"] = cgi.MiniFieldStorage("delete_clock", current_clock)
+
+        return args
 
     def do_POST(self):
 
@@ -64,7 +86,9 @@ class Handler(BaseHTTPRequestHandler):
         # self.wfile.write('Path: %s\n' % self.path)
         # self.wfile.write('Form data:\n')
 
-        result = self._handle_request(self.path, form)
+        result = self._handle_request(
+            self.path,
+            Handler.normalize_times_clocks(form))
 
         self.wfile.write(result)
 

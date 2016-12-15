@@ -57,6 +57,13 @@ function cp_run(){
 	fi
 }
 
+function c_createInstance(){
+    #!/bin/bash
+    for i in `seq 1 $2`; do
+        openstack server create --flavor 3 --image 599a6e20-6071-4af6-a902-7f1383aa2347 --security-group default --key-name VM-test "$1-$i"
+    done
+}
+
 function c_rebootHosts(){
      python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo reboot'
 }
@@ -95,6 +102,10 @@ function c_source(){
 
 function c_activateVenv(){
 	source /root/cinder/.venv/bin/activate
+}
+
+function c_getBadBackends(){
+    sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True
 }
 
 function c_runScheduler(){

@@ -338,6 +338,7 @@ class Experiment:
     def run_command_on_all_servers(self, command):
 
         for server in self.servers:
+
             self._run_command(server, command)
 
     def detach_delete_all_servers_volumes(self):
@@ -588,7 +589,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_info_logs', type=str, metavar='', required=False, default='False',
                         help='save INFO logs in database ?')
 
-    parser.add_argument('--description', type=str, metavar='', required=True, default='',
+    parser.add_argument('--description', type=str, metavar='', required=False, default='',
                         help='a description such as: sequential read training')
 
     is_shutdown = False
@@ -657,6 +658,9 @@ if __name__ == '__main__':
     if args.training_experiment_id > 0:
         is_training = False
 
+    script_volume_clock_calc = tools.read_file("script_volume_clock_calc")
+    script_volume_performance_meter_clock_calc = tools.read_file("script_volume_performance_meter_clock_calc")
+
     e = Experiment(
         is_shutdown=is_shutdown,
         debug_server_ip=args.debug_server_ip,
@@ -677,13 +681,12 @@ if __name__ == '__main__':
             "performance_args": performance_args,
             "mod_normalized_clock_for_feature_generation": args.mod_normalized_clock_for_feature_generation,
             "training_dataset_size": args.training_dataset_size,
-            "volume_clock_calc": tools.read_file("script_volume_clock_calc"),
-            "volume_performance_meter_clock_calc": tools.read_file("script_volume_performance_meter_clock_calc")
+            "volume_clock_calc": script_volume_clock_calc,
+            "volume_performance_meter_clock_calc": script_volume_performance_meter_clock_calc
         })
     )
 
     if "init" in args.commands:
-
         e.initialize_commands()
         pass
 
