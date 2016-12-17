@@ -57,10 +57,14 @@ function cp_run(){
 	fi
 }
 
-function c_createInstance(){
+function c_launchInstance(){
     #!/bin/bash
-    for i in `seq 1 $2`; do
-        openstack server create --flavor 3 --image 599a6e20-6071-4af6-a902-7f1383aa2347 --security-group default --key-name VM-test "$1-$i"
+#    | ID | Name      |   RAM | Disk | Ephemeral | VCPUs | Is Public |
+#    | 3  | m1.medium |  4096 |   40 |         0 |     2 | True      |
+#    | 4  | m1.large  |  8192 |   80 |         0 |     4 | True      |
+
+    for i in `seq 1 $3`; do
+        openstack server create --flavor "$2" --image 599a6e20-6071-4af6-a902-7f1383aa2347 --security-group default --key-name VM-test "$1-$i"
     done
 }
 
@@ -106,6 +110,18 @@ function c_activateVenv(){
 
 function c_getBadBackends(){
     sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True
+}
+
+function c_restartComputeServices(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart"
+}
+
+function c_rebootComputeNodes(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "reboot"
+}
+
+function c_executeCmdComputes(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "$1"
 }
 
 function c_runScheduler(){

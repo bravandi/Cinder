@@ -1,5 +1,8 @@
 import argparse
 from cmath import exp
+
+from pycparser.ply.yacc import errok
+
 import tools
 import os
 import communication
@@ -338,7 +341,6 @@ class Experiment:
     def run_command_on_all_servers(self, command):
 
         for server in self.servers:
-
             self._run_command(server, command)
 
     def detach_delete_all_servers_volumes(self):
@@ -413,6 +415,47 @@ class Experiment:
             password='')
 
         return client
+
+    @staticmethod
+    def execute_compute():
+        compute_node_ip_list = [
+            ("10.18.75.51", "compute1"),
+            ("10.18.75.52", "compute2"),
+            ("10.18.75.53", "compute3"),
+            ("10.18.75.54", "compute4"),
+            ("10.18.75.55", "compute5"),
+            ("10.18.75.56", "compute6"),
+            ("10.18.75.57", "compute7"),
+            ("10.18.75.58", "compute8"),
+            ("10.18.75.59", "compute9"),
+            ("10.18.75.45", "compute10"),
+            ("10.18.75.46", "compute11"),
+            ("10.18.75.47", "compute12")
+            # "10.18.75.48","compute1"),
+            # "10.18.75.49","compute1"),
+            # "10.18.75.50""compute1"),
+        ]
+
+        f = open(os.path.join(os.path.expanduser('~'), "keys", "server.pem"), 'r')
+        s = f.read()
+
+        errors = []
+
+        for compute_ip in compute_node_ip_list:
+            try:
+                client = tools.SshClient(host=compute_ip[0], port=22, key=s, username="root", password='')
+
+                print ("\n\n      [%s] Executing: %s" % (compute_ip, args.command))
+
+                result = client.execute(args.command)
+                for key, value in result.iteritems():
+                    print("[%s]: %s" % (key, value))
+            except Exception as err:
+                errors.append((compute_ip, str(err)))
+
+        print ("\n*************ERRORS*************")
+        for err_server in errors:
+            print ("[%s]: %s\n" % err_server)
 
 
 def args_load_defaults(args):
@@ -491,7 +534,7 @@ if __name__ == '__main__':
     parser.add_argument('commands', type=str, nargs="+",
                         choices=[
                             'start', 'shutdown', 'start-new', 'workload', 'del-avail-err', 'del-err',
-                            'performance', 'det-del', 'kill-workload',
+                            'performance', 'det-del', 'kill-workload', 'execute-compute',
                             'kill-performance', 'execute', 'init', 'create-experiment'],
                         help=
                         """
@@ -652,6 +695,11 @@ if __name__ == '__main__':
     if "del-err" in args.commands:
         print ("del-err")
         tools.delete_volumes_available_error(delete_available=False)
+        sys.exit()
+
+    if "execute-compute" in args.commands:
+        Experiment.execute_compute()
+
         sys.exit()
 
     is_training = True
