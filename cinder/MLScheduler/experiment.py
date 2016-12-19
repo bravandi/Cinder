@@ -635,6 +635,9 @@ if __name__ == '__main__':
     parser.add_argument('--description', type=str, metavar='', required=False, default='',
                         help='a description such as: sequential read training')
 
+    parser.add_argument('--assessment_policy', type=str, metavar='', required=False, default='max_efficiency',
+                        help="choose within ['max_efficiency', 'efficiency_first', 'qos_first', 'strict_qos']")
+
     is_shutdown = False
     # END WORKLOAD GENERATOR
 
@@ -717,7 +720,7 @@ if __name__ == '__main__':
         print_output_if_have_error=args.print_output_if_have_error,
         print_output=args.print_output,
         config=json.dumps({
-            # TODO add a switch for it
+            "assessment_policy": communication.AssessmentPolicy.efficiency_first(),
             "description": args.description,
             "training_experiment_id": args.training_experiment_id,
             "read_is_priority": args.read_is_priority,

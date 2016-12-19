@@ -10,7 +10,7 @@ import pdb
 
 __server_url = 'http://CinderDevelopmentEnv:8888/'
 __server_url = 'http://10.18.75.100:8888/'
-__java_service_url = "http://10.254.252.4:81/"
+__java_service_url = "http://10.254.252.4:81/"  # http://10.254.252.4:81/?reset
 
 """
 1	Accepted
@@ -20,6 +20,38 @@ __java_service_url = "http://10.254.252.4:81/"
 5	rejected read & write iops
 6	rejected unknown reason
 """
+
+
+class AssessmentPolicy:
+    @staticmethod
+    def strict_qos():
+        return "strict_qos"
+
+    @staticmethod
+    def qos_first():
+        return "qos_first"
+
+    @staticmethod
+    def efficiency_first():
+        return "efficiency_first"
+
+    @staticmethod
+    def max_efficiency():
+        return "max_efficiency"
+
+    @staticmethod
+    def parse(s):
+        if s == "max_efficiency":
+            return AssessmentPolicy.max_efficiency()
+
+        if s == "efficiency_first":
+            return AssessmentPolicy.efficiency_first()
+
+        if s == "qos_first":
+            return AssessmentPolicy.qos_first()
+
+        if s == "strict_qos":
+            return AssessmentPolicy.strict_qos()
 
 
 class ScheduleResponseType:
@@ -76,6 +108,19 @@ class Communication:
         Communication._current_experiment = ex
 
         return Communication._current_experiment
+
+    @staticmethod
+    def get_assessment_policy():
+        return AssessmentPolicy.parse(Communication.get_config("assessment_policy"))
+
+    @staticmethod
+    def get_training_experiment_id():
+        return Communication.get_config("training_experiment_id")
+
+    @staticmethod
+    def get_config(key):
+
+        return Communication.get_current_experiment()["config"][key]
 
     @staticmethod
     def reload():
@@ -243,11 +288,13 @@ def get_prediction(volume_request_id):
     return json.loads(prediction.text)
 
 
-def get_prediction_from_java_service(clock, volume_request_id, algorithm):
+def get_prediction_from_java_service(clock, volume_request_id, algorithm, training_experiment_id):
+
     params = {
         "volume_request_id": volume_request_id,
         "clock": clock,
-        "algorithm": algorithm
+        "algorithm": algorithm,
+        "training_experiment_id": training_experiment_id
     }
 
     prediction = requests.get("%s?%s" % (__java_service_url, urllib.urlencode(params)))

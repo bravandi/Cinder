@@ -48,12 +48,13 @@ function cp_run(){
 	if [ $# -eq 1 ]
 	#if [ $2 = "nohup" ]
 	then
+	    #cp_print "$2 ELSE" "$1";
+		eval "$1"
+	else
 	    #cp_print "$2 THEN" "$1";
 		# run in background by default
 		nohup $1  </dev/null &>/dev/null &
-	else
-	    #cp_print "$2 ELSE" "$1";
-		eval "$1"
+
 	fi
 }
 
@@ -113,7 +114,7 @@ function c_getBadBackends(){
 }
 
 function c_restartComputeServices(){
-    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart"
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart"
 }
 
 function c_rebootComputeNodes(){
@@ -168,7 +169,7 @@ function c_runServiceHandler(){
 }
 
 function cp_print(){
-    	printf "	$1 ${RED} $2 ${NC}\n"
+    printf "	$1 ${RED} $2 ${NC}\n"
 }
 
 function c_cdr_SL(){

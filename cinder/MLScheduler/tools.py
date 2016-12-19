@@ -135,7 +135,8 @@ def log(
         exception='',
         create_time=None,
         insert_db=True):
-    exception_message = exception
+    #
+    exception_message = str(exception)
 
     if create_time is None:
         create_time = datetime.now()
@@ -159,7 +160,8 @@ def log(
 
     msg = "\n {%s} <%s>-%s [%s - %s] %s. [%s] %s\n" \
           % (
-          app, type, code, function_name, file_name, message, create_time.strftime("%Y-%m-%d %H:%M:%S"), str(exception))
+              app, type, code, function_name, file_name, message, create_time.strftime("%Y-%m-%d %H:%M:%S"),
+              str(exception))
 
     print (msg)
 
@@ -167,13 +169,9 @@ def log(
         return msg
 
     try:
-
         conn = database.__create_connection_for_insert_delete()
-
         cursor = conn.cursor()
-
         output = cursor.callproc("insert_log", args)
-
         conn.commit()
 
         # output = list(output)
@@ -182,7 +180,8 @@ def log(
         # print insert_id
 
     except Exception as err:
-        raise Exception("ERROR in LOGGING. ARGS -->%s\nERR-->%s" % (args, str(err)))
+        pdb.set_trace()
+        raise Exception("ERROR in LOGGING. ARGS -->%s\n\nERR-->%s" % (args, str(err)))
 
     finally:
 
