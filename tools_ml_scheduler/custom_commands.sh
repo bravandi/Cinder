@@ -109,20 +109,40 @@ function c_activateVenv(){
 	source /root/cinder/.venv/bin/activate
 }
 
-function c_getBadBackends(){
-    sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True
+function c_getBadTenants(){
+    sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True | less
 }
 
-function c_restartComputeServices(){
+function c_computesRestartServices(){
     python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart"
 }
 
-function c_rebootComputeNodes(){
+function c_ComputesRebootNodes(){
     python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "reboot"
 }
 
-function c_executeCmdComputes(){
-    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "$1"
+function c_computesExecuteCmd(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "$1" | less
+}
+
+function c_blocksExecuteCmd(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command "$1" | less
+}
+
+function c_blocksCheckServices(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command 'service --status-all 2>/dev/null | grep -e "cinder\|tgt" | grep -e "- ]"' | less
+}
+
+function c_blocksLvdisplay(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command 'lvdisplay 2>/dev/null | grep cinder' | less
+}
+
+function c_blocksLvremove(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command "service tgt stop; lvdisplay 2>/dev/null | grep /dev/cinder-volumes | awk '{print $3}' | xargs lvremove -f; service tgt start" | less
+}
+
+function c_blocksRestartServices(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command "service tgt restart; service cinder-volume restart" | less
 }
 
 function c_runScheduler(){

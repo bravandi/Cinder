@@ -110,15 +110,6 @@ class FilterScheduler(driver.Scheduler):
 
             raise exception.NoValidHost(reason=_("No weighed hosts available"))
 
-        try:
-            schedule_response_id = mlscheduler_communication.insert_schedule_response(
-                experiment_id=experiment_id_schedule_response_id[0],
-                volume_request_id=experiment_id_schedule_response_id[1],
-                response_id=mlscheduler_communication.ScheduleResponseType.accepted())
-        except Exception as err:
-            # pdb.set_trace()
-            pass
-
         host = weighed_host.obj.host
         volume_id = request_spec['volume_id']
 
@@ -134,6 +125,11 @@ class FilterScheduler(driver.Scheduler):
                                          allow_reschedule=True)
 
         try:
+            schedule_response_id = mlscheduler_communication.insert_schedule_response(
+                experiment_id=experiment_id_schedule_response_id[0],
+                volume_request_id=experiment_id_schedule_response_id[1],
+                response_id=mlscheduler_communication.ScheduleResponseType.accepted())
+
             mlscheduler_communication.insert_volume(
                 experiment_id=experiment_id_schedule_response_id[0],
                 cinder_id=volume_id,

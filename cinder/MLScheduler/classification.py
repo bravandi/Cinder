@@ -23,6 +23,18 @@ class MachineLearningAlgorithm:
     def BayesianNetwork():
         return "bayesiannetwork"
 
+    @staticmethod
+    def parse(alg):
+        alg = alg.lower()
+        if alg == MachineLearningAlgorithm.RepTree():
+            return MachineLearningAlgorithm.RepTree()
+        if alg == MachineLearningAlgorithm.Regression():
+            return MachineLearningAlgorithm.Regression()
+        if alg == MachineLearningAlgorithm.J48():
+            return MachineLearningAlgorithm.J48()
+        if alg == MachineLearningAlgorithm.BayesianNetwork():
+            return MachineLearningAlgorithm.BayesianNetwork()
+
 
 class Classification:
     current_classification = None
@@ -96,7 +108,7 @@ class Classification:
             predictions_list = communication.get_prediction_from_java_service(
                 volume_request_id=volume_request_id,
                 clock=clock,
-                algorithm=MachineLearningAlgorithm.J48(),
+                algorithm=MachineLearningAlgorithm.parse(communication.Communication.get_config("learning_algorithm")),
                 training_experiment_id=communication.Communication.get_training_experiment_id()
             )
 
@@ -176,49 +188,31 @@ class Classification:
                       cinder_id, prediction_probabilities, candidate_list, assessment_policy,
                       number_of_volumes_plus_requested):
 
-        # if prediction_probabilities[self.violation_iops_classes["v1"]] >= 0.5:
-        #     candidate_list.append(cinder_id)
-
         if assessment_policy == communication.AssessmentPolicy.max_efficiency():
-            # compareTo = new double[] { 0.6, 0.6, 0.6 };
-            # if (predictors[0] > compareTo[0] || predictors[1] > compareTo[1]
-            # //|| predictors[2] > compareTo[2]) {
-
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.6 or [v2] > 0.6 or [v3] > 0.6 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_read_max_eff"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
         if assessment_policy == communication.AssessmentPolicy.efficiency_first():
-            # compareTo = new double[] { 0.8, 0.95, 0.98 };
-            # if (volNum == 0 || predictors[0] > compareTo[0]
-            # // || predictors[1] > compareTo[1] || predictors[2] > compareTo[2]
-
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.8 or [v2] > 0.95 or [v3] > 0.95 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_read_eff_fir"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
         if assessment_policy == communication.AssessmentPolicy.qos_first():
-            # compareTo = new double[] { 0.90, 0.49 };
-            # if (volNum == 0 || predictors[0] > compareTo[0]
-            # //|| predictors[1] > compareTo[1]
-
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.8 or [v2] > 0.95 or [v3] > 0.95 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_read_qos_fir"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
         if assessment_policy == communication.AssessmentPolicy.strict_qos():
-            # if (volNum == 0 || predictors[0] > compareTo[0]) {
-            # if (volNum == 0 || (predictors[0] > compareTo[0] && (predictors[0] + predictors[1] > compareTo[1]))) {
-
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.8 or [v2] > 0.95 or [v3] > 0.95 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_read_str_qos"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
@@ -228,28 +222,28 @@ class Classification:
         if assessment_policy == communication.AssessmentPolicy.max_efficiency():
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count > 0 or [v1] > 0.6 or [v2] > 0.6 or [v3] > 0.6 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_write_max_eff"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
         if assessment_policy == communication.AssessmentPolicy.efficiency_first():
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.8 or [v2] > 0.95 or [v3] > 0.95 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_write_eff_fir"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
         if assessment_policy == communication.AssessmentPolicy.qos_first():
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.8 or [v2] > 0.95 or [v3] > 0.95 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_write_qos_fir"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 
         if assessment_policy == communication.AssessmentPolicy.strict_qos():
             if self._assessment_policy_do_compare(
                     prediction_probabilities=prediction_probabilities,
-                    comparison_string="vol_count == 1 or [v1] > 0.8 or [v2] > 0.95 or [v3] > 0.95 or [v4] > 0",
+                    comparison_string=communication.Communication.get_config("assess_write_str_qos"),
                     number_of_volumes_plus_requested=number_of_volumes_plus_requested):
                 candidate_list.append(cinder_id)
 

@@ -83,12 +83,14 @@ class SshClient:
 
     def execute(self, command, sudo=False):
         feed_password = False
+        result = None
 
         if sudo and self.username != "root":
             command = "sudo -S -p '' %s" % command
             feed_password = self.password is not None and len(self.password) > 0
 
-        stdin, stdout, stderr = self.client.exec_command(command)
+
+        stdin, stdout, stderr = self.client.exec_command(command) #, timeout=10
 
         if feed_password:
             stdin.write(self.password + "\n")
@@ -98,9 +100,11 @@ class SshClient:
             stdin.write("Y\n")
             stdin.flush()
 
-        return {'out': stdout.readlines(),
-                'err': stderr.readlines(),
-                'retval': stdout.channel.recv_exit_status()}
+        result = {'out': stdout.readlines(),
+                  'err': stderr.readlines(),
+                  'retval': stdout.channel.recv_exit_status()}
+
+        return result
 
 
 def read_file(file_name, hard_path="~/cinder/cinder/MLScheduler/"):

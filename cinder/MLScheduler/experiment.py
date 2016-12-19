@@ -273,7 +273,7 @@ class Experiment:
             self._run_command(server, "sudo echo '%s@%s' > %s" %
                               (server["name"], server["ip"], tools.get_path_for_tenant("~/tenant_description")))
 
-            self._run_command(server, "sudo mkdir /media/")
+            # self._run_command(server, "sudo mkdir /media/")
 
             self._run_command(server, "sudo rm -r -d /media/*")
 
@@ -355,12 +355,18 @@ class Experiment:
 
     def start_workload_generators(self, workload_args, performance_args):
 
+        number_of_servers_running = 0
+
         for server in self.servers:
             remote_machine = RemoteMachine(server_ip=server["ip"])
 
             self.remote_machine_list.append(remote_machine)
 
             remote_machine.start(workload_args=workload_args, performance_args=performance_args)
+
+            number_of_servers_running = number_of_servers_running + 1
+
+            print ("number_of_servers_running: " + str(number_of_servers_running))
 
         while True:
             command = raw_input('Enter command [stop]: ')
@@ -417,7 +423,7 @@ class Experiment:
         return client
 
     @staticmethod
-    def execute_compute():
+    def execute_compute(command):
         compute_node_ip_list = [
             ("10.18.75.51", "compute1"),
             ("10.18.75.52", "compute2"),
@@ -445,9 +451,45 @@ class Experiment:
             try:
                 client = tools.SshClient(host=compute_ip[0], port=22, key=s, username="root", password='')
 
-                print ("\n\n      [%s] Executing: %s" % (compute_ip, args.command))
+                print ("\n\n      [%s] Executing: %s" % (compute_ip, command))
 
-                result = client.execute(args.command)
+                result = client.execute(command)
+                for key, value in result.iteritems():
+                    print("[%s]: %s" % (key, value))
+            except Exception as err:
+                errors.append((compute_ip, str(err)))
+
+        print ("\n*************ERRORS*************")
+        for err_server in errors:
+            print ("[%s]: %s\n" % err_server)
+
+    @staticmethod
+    def execute_blocks(command):
+        compute_node_ip_list = [
+            ("10.18.75.61", "block1"),
+            ("10.18.75.62", "block2"),
+            ("10.18.75.63", "block3"),
+            ("10.18.75.64", "block4"),
+            ("10.18.75.65", "block5"),
+            ("10.18.75.66", "block6"),
+            ("10.18.75.67", "block7"),
+            ("10.18.75.68", "block8"),
+            ("10.18.75.69", "block9"),
+            ("10.18.75.70", "block10")
+        ]
+
+        f = open(os.path.join(os.path.expanduser('~'), "keys", "server.pem"), 'r')
+        s = f.read()
+
+        errors = []
+
+        for compute_ip in compute_node_ip_list:
+            try:
+                client = tools.SshClient(host=compute_ip[0], port=22, key=s, username="root", password='')
+
+                print ("\n\n      [%s] Executing: %s" % (compute_ip, command))
+
+                result = client.execute(command)
                 for key, value in result.iteritems():
                     print("[%s]: %s" % (key, value))
             except Exception as err:
@@ -459,6 +501,7 @@ class Experiment:
 
 
 def args_load_defaults(args):
+    args.skip_init = tools.str2bool(args.skip_init)
     args.save_info_logs = tools.str2bool(args.save_info_logs)
     args.debug_run_only_one_server = tools.str2bool(args.debug_run_only_one_server)
     args.print_output_if_have_error = tools.str2bool(args.print_output_if_have_error)
@@ -535,7 +578,7 @@ if __name__ == '__main__':
                         choices=[
                             'start', 'shutdown', 'start-new', 'workload', 'del-avail-err', 'del-err',
                             'performance', 'det-del', 'kill-workload', 'execute-compute',
-                            'kill-performance', 'execute', 'init', 'create-experiment'],
+                            'kill-performance', 'execute', 'init', 'create-experiment', 'execute-blocks'],
                         help=
                         """
                         Manage experiments.
@@ -638,6 +681,13 @@ if __name__ == '__main__':
     parser.add_argument('--assessment_policy', type=str, metavar='', required=False, default='max_efficiency',
                         help="choose within ['max_efficiency', 'efficiency_first', 'qos_first', 'strict_qos']")
 
+    parser.add_argument('--skip_init', type=str, metavar='', required=False, default='True',
+                        help='save INFO logs in database ?')
+
+    parser.add_argument('--learning_algorithm', type=str, metavar='', required=False, default='j48',
+                        help='J48, RepTree')
+
+
     is_shutdown = False
     # END WORKLOAD GENERATOR
 
@@ -655,10 +705,14 @@ if __name__ == '__main__':
 
     if "start" in args.commands:
         args.commands = ["init", "workload", "performance"]
+        if args.skip_init is True:
+            args.commands.remove("init")
         args.new = False
 
     if "start-new" in args.commands:
         args.commands = ["init", "workload", "performance"]
+        if args.skip_init is True:
+            args.commands.remove("init")
         args.new = True
 
     if "create-experiment" in args.commands:
@@ -701,9 +755,13 @@ if __name__ == '__main__':
         sys.exit()
 
     if "execute-compute" in args.commands:
-        Experiment.execute_compute()
-
+        Experiment.execute_compute(args.command)
         sys.exit()
+
+    if "execute-blocks" in args.commands:
+        Experiment.execute_blocks(args.command)
+        sys.exit()
+
 
     is_training = True
     if args.training_experiment_id > 0:
@@ -720,6 +778,25 @@ if __name__ == '__main__':
         print_output_if_have_error=args.print_output_if_have_error,
         print_output=args.print_output,
         config=json.dumps({
+            "learning_algorithm": args.learning_algorithm,
+            "assess_read_max_eff": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.60 or [v3] > 0.60 or [v4] > 0.00",
+
+            "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.80 or [v2] > 0.90 or [v3] > 0.95 or [v4] > 0.00",
+
+            "assess_read_qos_fir": "vol_count >  0 or [v1] > 0.90 or [v2] > 0.40 or [v3] > 0.00 or [v4] > 0.00",
+
+            "assess_read_str_qos": "vol_count >  0 or [v1] > 0.75 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
+            # ################################ FOR WRITE ################################
+            # ################################ FOR WRITE ################################
+            # ################################ FOR WRITE ################################
+            "assess_write_max_eff": "vol_count == 1 or [v1] > 0.40 or [v2] > 0.40 or [v3] > 0.40 or [v4] > 0.00",
+
+            "assess_write_eff_fir": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.75 or [v3] > 0.75 or [v4] > 0.00",
+
+            "assess_write_qos_fir": "vol_count >  0 or [v1] > 0.70 or [v2] > 0.20 or [v3] > 0.00 or [v4] > 0.00",
+
+            "assess_write_str_qos": "vol_count >  0 or [v1] > 0.60 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
+
             "assessment_policy": communication.AssessmentPolicy.efficiency_first(),
             "description": args.description,
             "training_experiment_id": args.training_experiment_id,
@@ -739,11 +816,9 @@ if __name__ == '__main__':
 
     if "init" in args.commands:
         e.initialize_commands()
-        pass
 
     if "workload" in args.commands:
         e.start_workload_generators(workload_args, performance_args)
-        pass
 
     if "performance" in args.commands:
         e.start_performance_evaluators(performance_args)
