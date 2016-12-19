@@ -66,6 +66,8 @@ function c_launchInstance(){
 
     for i in `seq 1 $3`; do
         openstack server create --flavor "$2" --image 599a6e20-6071-4af6-a902-7f1383aa2347 --security-group default --key-name VM-test "$1-$i"
+
+        sleep 3
     done
 }
 
@@ -107,6 +109,10 @@ function c_source(){
 
 function c_activateVenv(){
 	source /root/cinder/.venv/bin/activate
+}
+
+function c_initTenants(){
+    python ~/cinder/cinder/MLScheduler/experiment.py init
 }
 
 function c_getBadTenants(){

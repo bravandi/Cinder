@@ -711,7 +711,7 @@ if __name__ == '__main__':
 
     if "start-new" in args.commands:
         args.commands = ["init", "workload", "performance"]
-        if args.skip_init is True:
+        if "init" in args.commands and args.skip_init is True:
             args.commands.remove("init")
         args.new = True
 
@@ -719,7 +719,8 @@ if __name__ == '__main__':
         args.new = True
 
     if args.debug_run_only_one_server and args_has_init_initially is False:
-        args.commands.remove("init")
+        if "init" in args.commands:
+            args.commands.remove("init")
 
     workload_args = {
         "--fio_test_name": args.workload_fio_test_name,
