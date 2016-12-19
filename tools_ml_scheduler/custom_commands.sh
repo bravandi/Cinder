@@ -123,7 +123,7 @@ function c_computesRestartServices(){
     python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart"
 }
 
-function c_ComputesRebootNodes(){
+function c_computesRebootNodes(){
     python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "reboot"
 }
 

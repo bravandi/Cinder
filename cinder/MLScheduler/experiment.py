@@ -7,6 +7,7 @@ import tools
 import os
 import communication
 from multiprocessing import Process
+from classification import MachineLearningAlgorithm
 import time
 import json
 import sys
@@ -501,6 +502,9 @@ class Experiment:
 
 
 def args_load_defaults(args):
+    args.assessment_policy = communication.AssessmentPolicy.parse(args.assessment_policy)
+    args.learning_algorithm = MachineLearningAlgorithm.parse(args.learning_algorithm)
+
     args.skip_init = tools.str2bool(args.skip_init)
     args.save_info_logs = tools.str2bool(args.save_info_logs)
     args.debug_run_only_one_server = tools.str2bool(args.debug_run_only_one_server)
@@ -687,6 +691,8 @@ if __name__ == '__main__':
     parser.add_argument('--learning_algorithm', type=str, metavar='', required=False, default='j48',
                         help='J48, RepTree')
 
+    parser.add_argument('--max_number_vols', default=400, metavar='', type=int, required=False,
+                        help='stop the experiment when max number of requested volume is reached.')
 
     is_shutdown = False
     # END WORKLOAD GENERATOR
@@ -780,9 +786,11 @@ if __name__ == '__main__':
         print_output=args.print_output,
         config=json.dumps({
             "learning_algorithm": args.learning_algorithm,
-            "assess_read_max_eff": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.60 or [v3] > 0.60 or [v4] > 0.00",
+            # "assess_read_max_eff": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.60 or [v3] > 0.60 or [v4] > 0.00",
+            "assess_read_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
 
-            "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.80 or [v2] > 0.90 or [v3] > 0.95 or [v4] > 0.00",
+            # "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.50 or [v4] > 0.00",
+            "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.50 or [v4] > 0.00",
 
             "assess_read_qos_fir": "vol_count >  0 or [v1] > 0.90 or [v2] > 0.40 or [v3] > 0.00 or [v4] > 0.00",
 
@@ -790,7 +798,8 @@ if __name__ == '__main__':
             # ################################ FOR WRITE ################################
             # ################################ FOR WRITE ################################
             # ################################ FOR WRITE ################################
-            "assess_write_max_eff": "vol_count == 1 or [v1] > 0.40 or [v2] > 0.40 or [v3] > 0.40 or [v4] > 0.00",
+            # "assess_write_max_eff": "vol_count == 1 or [v1] > 0.40 or [v2] > 0.40 or [v3] > 0.40 or [v4] > 0.00",
+            "assess_write_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
 
             "assess_write_eff_fir": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.75 or [v3] > 0.75 or [v4] > 0.00",
 
@@ -798,7 +807,7 @@ if __name__ == '__main__':
 
             "assess_write_str_qos": "vol_count >  0 or [v1] > 0.60 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
 
-            "assessment_policy": communication.AssessmentPolicy.efficiency_first(),
+            "assessment_policy": args.assessment_policy,
             "description": args.description,
             "training_experiment_id": args.training_experiment_id,
             "read_is_priority": args.read_is_priority,

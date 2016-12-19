@@ -89,10 +89,9 @@ class SshClient:
             command = "sudo -S -p '' %s" % command
             feed_password = self.password is not None and len(self.password) > 0
 
-        try:
-            stdin, stdout, stderr = self.client.exec_command(command) #, timeout=10
-        except Exception as err:
-            pdb.set_trace()
+
+        stdin, stdout, stderr = self.client.exec_command(command) #, timeout=10
+
 
         if feed_password:
             stdin.write(self.password + "\n")
