@@ -1,22 +1,16 @@
 import argparse
-from cmath import exp
-
-from pycparser.ply.yacc import errok
-
 import tools
 import os
 import communication
 from multiprocessing import Process
 from classification import MachineLearningAlgorithm
 import time
-import json
 import sys
 import json
 import pdb
-import numpy as np
 
 
-class RemoteMachine():
+class RemoteMachine:
     def __init__(self, server_ip):
         self.proc = None
         self.server_ip = server_ip
@@ -370,32 +364,35 @@ class Experiment:
             print ("number_of_servers_running: " + str(number_of_servers_running))
 
         while True:
-            command = raw_input('Enter command [stop]: ')
+            is_all_remote_machines_done = True
 
-            if command in ["stop", "s"]:
-                print('stopping the experiments.')
+            for remote_machine in self.remote_machine_list:
+                is_all_remote_machines_done = is_all_remote_machines_done and remote_machine.is_alive() is False
 
-                for remote_machine in self.remote_machine_list:
-                    print("terminating remote ip: %s" % remote_machine.server_ip)
-
-                    remote_machine.terminate()
-
-                self.kill_workload_generator_all_servers()
-
-                time.sleep(3)
-
-                e.kill_workload_generator_all_servers()
-
-                e.detach_delete_all_servers_volumes()
-
+            if is_all_remote_machines_done is True:
+                print ("\n%%%%%%%%%%%%%%All experiments done%%%%%%%%%%%%%%")
                 break
 
-            if command in ["restart", "r"]:
-                self.run_command_on_all_servers("sudo reboot")
 
-                break
+            # if command in ["stop", "s"]:
+            #     print ("stopping the experiment.")
+            #     for remote_machine in self.remote_machine_list:
+            #         print ("terminating remote ip: " + remote_machine.server_ip)
+            #         remote_machine.terminate()
+            #         self.kill_performance_evaluators()
+            #         time.sleep(4)
+            #         self.detach_delete_all_servers_volumes()
+            #         bufferLock.release()
+            #         break
 
-            print ("wrong command.")
+            time.sleep(2)
+
+        if self.debug_server_ip is None or self.debug_server_ip.strip() == '':
+            tools.run_command2(
+                'python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart" > computesRestartServices.out')
+
+            tools.run_command2(
+                'python ~/cinder/cinder/MLScheduler/experiment.py execute --command "sudo reboot" > rebootHosts.out')
 
     @staticmethod
     def create_ssh_clients(server_ip):
@@ -769,7 +766,6 @@ if __name__ == '__main__':
         Experiment.execute_blocks(args.command)
         sys.exit()
 
-
     is_training = True
     if args.training_experiment_id > 0:
         is_training = False
@@ -785,6 +781,7 @@ if __name__ == '__main__':
         print_output_if_have_error=args.print_output_if_have_error,
         print_output=args.print_output,
         config=json.dumps({
+            "max_number_vols": args.max_number_vols,
             "learning_algorithm": args.learning_algorithm,
             # "assess_read_max_eff": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.60 or [v3] > 0.60 or [v4] > 0.00",
             "assess_read_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",

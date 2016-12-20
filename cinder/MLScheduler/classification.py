@@ -38,6 +38,7 @@ class MachineLearningAlgorithm:
 
 class Classification:
     current_classification = None
+    last_reload_experiment = datetime.now()
 
     def __init__(self,
                  classifier_name, violation_iops_classes,
@@ -136,6 +137,10 @@ class Classification:
         read_candidates = []
         write_candidates = []
         assessment_policy = communication.Communication.get_assessment_policy()
+
+        if tools.get_time_difference(Classification.last_reload_experiment) >= 20:
+            communication.Communication.reload()
+            Classification.last_reload_experiment = datetime.now()
 
         for backend_prediction in predictions_list:
             self.pick_for_read(

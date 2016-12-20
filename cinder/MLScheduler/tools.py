@@ -9,6 +9,44 @@ from keystoneauth1.identity import v3
 from keystoneauth1 import session
 from novaclient import client as n_client
 from cinderclient import client as c_client
+import subprocess
+
+
+def convert_string_datetime(input):
+    input = input.strip()
+    if input == '':
+        return None
+    else:
+        return datetime.strptime(input.split('.')[0], "%Y-%m-%d %H:%M:%S")
+
+
+def get_time_difference(start_time, end_time=None):
+    if isinstance(start_time, basestring):
+        start_time = convert_string_datetime(start_time)
+
+    if isinstance(end_time, basestring):
+        end_time = convert_string_datetime(end_time)
+
+    if end_time is None:
+        end_time = datetime.now()
+
+    difference = (end_time - start_time)
+    return difference.total_seconds()
+
+
+def run_command2(command, get_out=False, debug=False, no_pipe=False):
+    task = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+
+    out = ''
+
+    if get_out is True:
+        out = task.stdout.read()
+        assert task.wait() == 0
+
+    if debug:
+        print("\nRUN_COMMAND2:\n" + command + "\nOUT -->" + out)
+
+    return out
 
 
 def get_session():
