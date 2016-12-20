@@ -67,7 +67,7 @@ function c_launchInstance(){
     for i in `seq 1 $3`; do
         openstack server create --flavor "$2" --image 599a6e20-6071-4af6-a902-7f1383aa2347 --security-group default --key-name VM-test "$1-$i"
 
-        sleep 3
+        sleep 4.5
     done
 }
 
@@ -81,6 +81,10 @@ function c_delErrVolumes(){
 
 function c_delAvailErrVolumes(){
     python ~/cinder/cinder/MLScheduler/experiment.py del-avail-err
+}
+
+function c_shutdownExperiment(){
+    python ~/cinder/cinder/MLScheduler/experiment.py shutdown
 }
 
 function c_detachDel(){

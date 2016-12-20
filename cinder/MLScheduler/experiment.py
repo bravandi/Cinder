@@ -10,6 +10,8 @@ import json
 import pdb
 
 
+_args_commands = None
+
 class RemoteMachine:
     def __init__(self, server_ip):
         self.proc = None
@@ -159,7 +161,7 @@ class Experiment:
             except:
                 raise Exception("Cannot communicate with the java service handler.")
 
-            tools.log("Created a new experiment. id: " + str(ex_id), insert_db=False)
+            tools.log("Created a new experiment. id: " + str(ex_id),code="created-new-experiment", insert_db=False)
 
         Experiment.experiment = communication.Communication.get_current_experiment()
 
@@ -202,9 +204,30 @@ class Experiment:
                     if server_ip == self.debug_server_ip:
                         continue
 
-                tools.log("Connecting via ssh to %s" % (server_ip), insert_db=False)
+                tools.log("Connecting via ssh to %s" % (server_ip),code="connecting-via-ssh", insert_db=False)
 
                 ssh_client = Experiment.create_ssh_clients(server_ip)
+
+                if "start-new" in _args_commands or "start" in _args_commands:
+                    result = ssh_client.execute("sudo ps aux | grep workload_generator")
+                    if len(result["out"]) > 0:
+
+                        for out in result["out"]:
+                            if "workload_generator.py" in out:
+                                ssh_client.close()
+                                continue
+
+                result = ssh_client.execute("sudo fdisk -l")
+
+                if len(result["err"]) > 0 and "Input/output error" in result["err"][0]:
+
+                    result_2 = ssh_client.execute(
+                        "sudo python /home/centos/MLSchedulerAgent/workload_generator.py det-del")
+                    tenant_id = ssh_client.execute("cat /home/centos/tenantid")["out"][0]
+                    result_2 = tools.run_command2("openstack server delete " + tenant_id, get_out=True)
+                    ssh_client.close()
+                    continue
+
 
                 self.servers.append({
                     "id": server.id,
@@ -336,6 +359,7 @@ class Experiment:
     def run_command_on_all_servers(self, command):
 
         for server in self.servers:
+
             self._run_command(server, command)
 
     def detach_delete_all_servers_volumes(self):
@@ -372,7 +396,6 @@ class Experiment:
             if is_all_remote_machines_done is True:
                 print ("\n%%%%%%%%%%%%%%All experiments done%%%%%%%%%%%%%%")
                 break
-
 
             # if command in ["stop", "s"]:
             #     print ("stopping the experiment.")
@@ -698,6 +721,8 @@ if __name__ == '__main__':
 
     args_load_defaults(args)
 
+    _args_commands = args.commands
+
     args_has_init_initially = "init" in args.commands
 
     if "shutdown" in args.commands:
@@ -831,6 +856,7 @@ if __name__ == '__main__':
         e.start_performance_evaluators(performance_args)
 
     if "kill-workload" in args.commands:
+
         e.kill_workload_generator_all_servers()
 
         # sleep 4 to make sure all the processes are dead are not going to create new volumes!
