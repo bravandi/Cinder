@@ -257,6 +257,7 @@ def insert_schedule_response(
 def get_training_dataset(
         experiment_id,
         training_dataset_size):
+    # WRONG PARAMETERS
     params = {
         "experiment_id": experiment_id,
         "training_dataset_size": training_dataset_size

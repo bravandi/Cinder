@@ -68,6 +68,7 @@ class ClassificationWithPython:
         if is_training is True:
             return None
 
+        # WRONG PARAMETERS
         training_data = communication.get_training_dataset(
             experiment_id=self.training_experiment_id,
             training_dataset_size=training_dataset_size

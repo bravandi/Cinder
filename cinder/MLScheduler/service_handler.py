@@ -144,6 +144,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/get_training_dataset":
             training_dataset = database.execute_get_procedure_tuple(
                 "get_training_dataset",
+                # WRONG PARAMETERS
                 args=(
                     long(parameters["experiment_id"][0]),
                     # included this parameter in the stored procedure
