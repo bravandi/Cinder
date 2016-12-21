@@ -71,6 +71,17 @@ function c_launchInstance(){
     done
 }
 
+function c_hostsRunningWorkloadGen(){
+     echo "<<<nodes with bigger than number 2 are running workload generator.>>>"
+     echo "#####################################################################"
+
+     python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo ps -ef | grep workload_generator | wc -l' --print_output True --print_output_if_have_error True | less
+}
+
+function c_hostsExecuteCmd(){
+    python /root/cinder/cinder/MLScheduler/experiment.py execute --command "$1" | less
+}
+
 function c_rebootHosts(){
      python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo reboot'
 }
@@ -144,7 +155,7 @@ function c_blocksCheckServices(){
 }
 
 function c_blocksLvdisplay(){
-    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command 'lvdisplay 2>/dev/null | grep cinder' | less
+    python /root/cinder/cinder/MLScheduler/experiment.py execute-blocks --command 'lvdisplay 2>/dev/null | grep cinder | wc -l' | less
 }
 
 function c_blocksLvremove(){

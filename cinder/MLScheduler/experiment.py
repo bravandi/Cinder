@@ -7,6 +7,7 @@ from classification import MachineLearningAlgorithm
 import time
 import sys
 import json
+from datetime import datetime
 import pdb
 
 
@@ -719,6 +720,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    print("Experiment run time: " + str(datetime.now()))
+
     args_load_defaults(args)
 
     _args_commands = args.commands
@@ -795,8 +798,8 @@ if __name__ == '__main__':
     if args.training_experiment_id > 0:
         is_training = False
 
-    script_volume_clock_calc = tools.read_file("script_volume_clock_calc")
-    script_volume_performance_meter_clock_calc = tools.read_file("script_volume_performance_meter_clock_calc")
+    script_volume_clock_calc = tools.read_file("script_volume_clock_calc.py")
+    script_volume_performance_meter_clock_calc = tools.read_file("script_volume_performance_meter_clock_calc.py")
 
     e = Experiment(
         is_shutdown=is_shutdown,
@@ -812,22 +815,22 @@ if __name__ == '__main__':
             "assess_read_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
 
             # "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.50 or [v4] > 0.00",
-            "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.50 or [v4] > 0.00",
+            "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.70",
 
-            "assess_read_qos_fir": "vol_count >  0 or [v1] > 0.90 or [v2] > 0.40 or [v3] > 0.00 or [v4] > 0.00",
+            "assess_read_qos_fir": "[v1] > 0.90 or [v2] > 0.90",
 
-            "assess_read_str_qos": "vol_count >  0 or [v1] > 0.75 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
+            "assess_read_str_qos": "[v1] > 0.865 or [v2] > 0.865",
             # ################################ FOR WRITE ################################
             # ################################ FOR WRITE ################################
             # ################################ FOR WRITE ################################
             # "assess_write_max_eff": "vol_count == 1 or [v1] > 0.40 or [v2] > 0.40 or [v3] > 0.40 or [v4] > 0.00",
             "assess_write_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
 
-            "assess_write_eff_fir": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.75 or [v3] > 0.75 or [v4] > 0.00",
+            "assess_write_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.70",
 
-            "assess_write_qos_fir": "vol_count >  0 or [v1] > 0.70 or [v2] > 0.20 or [v3] > 0.00 or [v4] > 0.00",
+            "assess_write_qos_fir": "[v1] > 0.90 or [v2] > 0.90",
 
-            "assess_write_str_qos": "vol_count >  0 or [v1] > 0.60 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
+            "assess_write_str_qos": "[v1] > 0.87 or [v2] > 0.87",
 
             "assessment_policy": args.assessment_policy,
             "description": args.description,
@@ -837,8 +840,10 @@ if __name__ == '__main__':
             "min_required_vpm_records": 150,  # used in [get_training_dataset] stored procedure
             "volume_attach_time_out": 35,
             "wait_volume_status_timeout": 15,
-            "workload_args": workload_args,
-            "performance_args": performance_args,
+
+            "workload_args": dict([(z[2:], w) for z, w in workload_args.iteritems()]),
+            "performance_args": dict([(z[2:], w) for z, w in performance_args.iteritems()]),
+
             "mod_normalized_clock_for_feature_generation": args.mod_normalized_clock_for_feature_generation,
             "training_dataset_size": args.training_dataset_size,
             "volume_clock_calc": script_volume_clock_calc,

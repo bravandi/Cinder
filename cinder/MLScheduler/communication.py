@@ -294,7 +294,8 @@ def get_prediction_from_java_service(clock, volume_request_id, algorithm, traini
         "volume_request_id": volume_request_id,
         "clock": clock,
         "algorithm": algorithm,
-        "training_experiment_id": training_experiment_id
+        "training_experiment_id": training_experiment_id,
+        "experiment_id": Communication.get_current_experiment()["id"]
     }
 
     prediction = requests.get("%s?%s" % (__java_service_url, urllib.urlencode(params)))
