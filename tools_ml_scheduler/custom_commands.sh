@@ -71,6 +71,18 @@ function c_launchInstance(){
     done
 }
 
+function c_novaDown(){
+      nova service-list | grep down
+}
+
+function c_hostsBadTenants(){
+    sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True | less
+}
+
+function c_hostsReboot(){
+     python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo reboot'
+}
+
 function c_hostsRunningWorkloadGen(){
      echo "<<<nodes with bigger than number 2 are running workload generator.>>>"
      echo "#####################################################################"
@@ -79,11 +91,7 @@ function c_hostsRunningWorkloadGen(){
 }
 
 function c_hostsExecuteCmd(){
-    python /root/cinder/cinder/MLScheduler/experiment.py execute --command "$1" | less
-}
-
-function c_rebootHosts(){
-     python ~/cinder/cinder/MLScheduler/experiment.py execute --command 'sudo reboot'
+    python /root/cinder/cinder/MLScheduler/experiment.py execute --command "$1" --print_output false  --print_output_if_have_error true | less
 }
 
 function c_delErrVolumes(){
@@ -128,10 +136,6 @@ function c_activateVenv(){
 
 function c_initTenants(){
     python ~/cinder/cinder/MLScheduler/experiment.py init
-}
-
-function c_getBadTenants(){
-    sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True | less
 }
 
 function c_computesRestartServices(){

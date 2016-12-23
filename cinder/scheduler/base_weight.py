@@ -168,7 +168,6 @@ class BaseWeightHandler(base_handler.BaseHandler):
                 final_result = weighed_objs
         except Exception as err:
 
-            # pdb.set_trace()
             final_result = weighed_objs
 
         return sorted(final_result, key=lambda x: x.weight, reverse=True)

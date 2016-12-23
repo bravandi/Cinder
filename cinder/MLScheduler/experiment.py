@@ -811,26 +811,30 @@ if __name__ == '__main__':
         config=json.dumps({
             "max_number_vols": args.max_number_vols,
             "learning_algorithm": args.learning_algorithm,
-            # "assess_read_max_eff": "vol_count == 1 or [v1] > 0.60 or [v2] > 0.60 or [v3] > 0.60 or [v4] > 0.00",
-            "assess_read_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
 
-            # "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.50 or [v4] > 0.00",
+            "assess_read_max_eff": "[v1] >= 0.00 or [v2] >= 0.00 or [v3] >= 0.00 or [v4] >= 0.00",
+
             "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.70",
+            "assess_read_qos_fir": "vol_count == 1 or [v1] >= 0.61 or [v2] >= 0.61",
+            "assess_read_str_qos": "vol_count == 1 or [v1] > 0.68 or [v2] > 0.68",
 
-            "assess_read_qos_fir": "[v1] > 0.90 or [v2] > 0.90",
 
-            "assess_read_str_qos": "[v1] > 0.865 or [v2] > 0.865",
+            "assess_read_eff_fir_bn": "vol_count == 1 or [v1] > 0.15 or [v2] > 0.17 or [v3] > 0.30",
+            "assess_read_qos_fir_bn": "vol_count == 1 or [v1] >= 0.22 or [v2] >= 0.28 or [v3] > 0.51",
+            "assess_read_str_qos_bn": "vol_count == 1 or [v1] > 0.68 or [v2] > 0.68",
             # ################################ FOR WRITE ################################
             # ################################ FOR WRITE ################################
             # ################################ FOR WRITE ################################
-            # "assess_write_max_eff": "vol_count == 1 or [v1] > 0.40 or [v2] > 0.40 or [v3] > 0.40 or [v4] > 0.00",
-            "assess_write_max_eff": "vol_count == 1 or [v1] > 0.00 or [v2] > 0.00 or [v3] > 0.00 or [v4] > 0.00",
+            "assess_write_max_eff": "[v1] >= 0.00 or [v2] >= 0.00 or [v3] >= 0.00 or [v4] >= 0.00",
 
             "assess_write_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.70",
+            "assess_write_qos_fir": "vol_count == 1 or [v1] >= 0.65 or [v2] >= 0.65",
+            "assess_write_str_qos": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70",
 
-            "assess_write_qos_fir": "[v1] > 0.90 or [v2] > 0.90",
 
-            "assess_write_str_qos": "[v1] > 0.87 or [v2] > 0.87",
+            "assess_write_eff_fir_bn": "vol_count == 1 or [v1] > 0.18 or [v2] > 0.20 or [v3] > 0.35",
+            "assess_write_qos_fir_bn": "vol_count == 1 or [v1] >= 0.27 or [v2] >= 0.35 or [v3] > 0.57",
+            "assess_write_str_qos_bn": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70",
 
             "assessment_policy": args.assessment_policy,
             "description": args.description,
