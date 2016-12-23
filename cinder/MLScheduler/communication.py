@@ -279,6 +279,16 @@ def get_backends_weights(experiment_id, volume_request_id):
     return json.loads(weights.text)
 
 
+def get_error_log_count(experiment_id):
+    params = {
+        "experiment_id": experiment_id
+    }
+
+    error_count = requests.get("%sget_error_log_count?%s" % (__server_url, urllib.urlencode(params)))
+
+    return int(error_count.text)
+
+
 def get_prediction(volume_request_id):
     params = {
         "volume_request_id": volume_request_id
@@ -353,6 +363,9 @@ def _parse_response(response):
 
 
 if __name__ == "__main__":
+
+    print (get_error_log_count(0))
+
     # http://10.254.252.6:81/?volume_request_id=1490&clock=100&algorithm=j48
 
     # from classification import MachineLearningAlgorithm

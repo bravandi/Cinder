@@ -10,8 +10,8 @@ import json
 from datetime import datetime
 import pdb
 
-
 _args_commands = None
+
 
 class RemoteMachine:
     def __init__(self, server_ip):
@@ -150,6 +150,8 @@ class Experiment:
                 config=config
             )
 
+            communication.Communication.reload()
+
             for backend_name in tools.get_cinder_backends():
                 communication.insert_backend(
                     experiment_id=ex_id,
@@ -162,7 +164,7 @@ class Experiment:
             except:
                 raise Exception("Cannot communicate with the java service handler.")
 
-            tools.log("Created a new experiment. id: " + str(ex_id),code="created-new-experiment", insert_db=False)
+            tools.log("Created a new experiment. id: " + str(ex_id), code="created-new-experiment", insert_db=False)
 
         Experiment.experiment = communication.Communication.get_current_experiment()
 
@@ -205,7 +207,7 @@ class Experiment:
                     if server_ip == self.debug_server_ip:
                         continue
 
-                tools.log("Connecting via ssh to %s" % (server_ip),code="connecting-via-ssh", insert_db=False)
+                tools.log("Connecting via ssh to %s" % (server_ip), code="connecting-via-ssh", insert_db=False)
 
                 ssh_client = Experiment.create_ssh_clients(server_ip)
 
@@ -221,14 +223,12 @@ class Experiment:
                 result = ssh_client.execute("sudo fdisk -l")
 
                 if len(result["err"]) > 0 and "Input/output error" in result["err"][0]:
-
                     result_2 = ssh_client.execute(
                         "sudo python /home/centos/MLSchedulerAgent/workload_generator.py det-del")
                     tenant_id = ssh_client.execute("cat /home/centos/tenantid")["out"][0]
                     result_2 = tools.run_command2("openstack server delete " + tenant_id, get_out=True)
                     ssh_client.close()
                     continue
-
 
                 self.servers.append({
                     "id": server.id,
@@ -241,7 +241,7 @@ class Experiment:
                 tools.log(
                     type="ERROR",
                     code="ssh",
-                    file_name="database.py",
+                    file_name="experiment.py",
                     function_name="",
                     message="can not create SSH client for %s" % server_ip,
                     exception=err)
@@ -360,7 +360,6 @@ class Experiment:
     def run_command_on_all_servers(self, command):
 
         for server in self.servers:
-
             self._run_command(server, command)
 
     def detach_delete_all_servers_volumes(self):
@@ -375,6 +374,11 @@ class Experiment:
 
     def start_workload_generators(self, workload_args, performance_args):
 
+        try:
+            tools.run_command2("rm /root/exp_*")
+        except Exception as err:
+            pass
+
         number_of_servers_running = 0
 
         for server in self.servers:
@@ -388,7 +392,44 @@ class Experiment:
 
             print ("number_of_servers_running: " + str(number_of_servers_running))
 
+        last_bad_vol_count = 0
+
         while True:
+
+            current_bad_vol_count = communication.get_error_log_count(experiment_id=self.experiment["id"])
+
+            if current_bad_vol_count - last_bad_vol_count >= communication.Communication.get_config("restart_controller_compute_bad_volume_count_threshold"):
+
+                tools.log(
+                    type="WARNING",
+                    code="regular_service_restart",
+                    file_name="experiment.py",
+                    function_name="start_workload_generators",
+                    message="restarting compute and controller services to make sure everything will be fine. ever 7 minutes")
+
+                try:
+                    tools.run_command2(
+                        'sudo python /root/cinder/cinder/MLScheduler/experiment.py execute-controller --command "service keystone restart; service nova-api restart; service nova-cert restart; service nova-consoleauth restart; service nova-scheduler restart; service nova-conductor restart; service nova-novncproxy restart; service neutron-server restart; service memcached restart" > /root/exp_controller_restart_err_count.out',
+                        get_out=True
+                    )
+
+                    tools.run_command2(
+                        'python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart" > /root/exp_computes_restart_err_count.out',
+                        get_out=True
+                    )
+
+                    tools.run_command2("python ~/cinder/cinder/MLScheduler/experiment.py del-err", get_out=True)
+
+                    last_bad_vol_count = last_bad_vol_count + current_bad_vol_count
+                except Exception as err:
+                    tools.log(
+                        type="ERROR",
+                        code="error_count_limit_failed",
+                        file_name="experiment.py",
+                        function_name="start_workload_generators",
+                        message="failed restarting services. will wait for 10 seconds",
+                        exception=err)
+
             is_all_remote_machines_done = True
 
             for remote_machine in self.remote_machine_list:
@@ -398,25 +439,14 @@ class Experiment:
                 print ("\n%%%%%%%%%%%%%%All experiments done%%%%%%%%%%%%%%")
                 break
 
-            # if command in ["stop", "s"]:
-            #     print ("stopping the experiment.")
-            #     for remote_machine in self.remote_machine_list:
-            #         print ("terminating remote ip: " + remote_machine.server_ip)
-            #         remote_machine.terminate()
-            #         self.kill_performance_evaluators()
-            #         time.sleep(4)
-            #         self.detach_delete_all_servers_volumes()
-            #         bufferLock.release()
-            #         break
+            time.sleep(12)
 
-            time.sleep(2)
-
-        if self.debug_server_ip is None or self.debug_server_ip.strip() == '':
+        if (self.debug_server_ip is None or self.debug_server_ip.strip()) == '':
             tools.run_command2(
-                'python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart" > computesRestartServices.out')
+                'python /root/cinder/cinder/MLScheduler/experiment.py execute-compute --command "service nova-compute restart; service neutron-linuxbridge-cleanup restart; service neutron-linuxbridge-agent restart" > exp_computes_restart_simulation_done.out')
 
             tools.run_command2(
-                'python ~/cinder/cinder/MLScheduler/experiment.py execute --command "sudo reboot" > rebootHosts.out')
+                'python ~/cinder/cinder/MLScheduler/experiment.py execute --command "sudo reboot" > exp_reboot_hosts_simulation_done.out')
 
     @staticmethod
     def create_ssh_clients(server_ip):
@@ -462,6 +492,33 @@ class Experiment:
             # "10.18.75.48","compute1"),
             # "10.18.75.49","compute1"),
             # "10.18.75.50""compute1"),
+        ]
+
+        f = open(os.path.join(os.path.expanduser('~'), "keys", "server.pem"), 'r')
+        s = f.read()
+
+        errors = []
+
+        for compute_ip in compute_node_ip_list:
+            try:
+                client = tools.SshClient(host=compute_ip[0], port=22, key=s, username="root", password='')
+
+                print ("\n\n      [%s] Executing: %s" % (compute_ip, command))
+
+                result = client.execute(command)
+                for key, value in result.iteritems():
+                    print("[%s]: %s" % (key, value))
+            except Exception as err:
+                errors.append((compute_ip, str(err)))
+
+        print ("\n*************ERRORS*************")
+        for err_server in errors:
+            print ("[%s]: %s\n" % err_server)
+
+    @staticmethod
+    def execute_controller(command):
+        compute_node_ip_list = [
+            ("10.18.75.41", "controller")
         ]
 
         f = open(os.path.join(os.path.expanduser('~'), "keys", "server.pem"), 'r')
@@ -537,7 +594,7 @@ def args_load_defaults(args):
 
     if args.debug_run_only_one_server:
         if args.debug_server_ip is None:
-            args.debug_server_ip = "10.18.75.189"
+            args.debug_server_ip = ""
 
     if args.debug_server_ip is not None:
         args.debug_run_only_one_server = True
@@ -602,7 +659,7 @@ if __name__ == '__main__':
     parser.add_argument('commands', type=str, nargs="+",
                         choices=[
                             'start', 'shutdown', 'start-new', 'workload', 'del-avail-err', 'del-err',
-                            'performance', 'det-del', 'kill-workload', 'execute-compute',
+                            'performance', 'det-del', 'kill-workload', 'execute-compute', 'execute-controller',
                             'kill-performance', 'execute', 'init', 'create-experiment', 'execute-blocks'],
                         help=
                         """
@@ -753,6 +810,9 @@ if __name__ == '__main__':
         if "init" in args.commands:
             args.commands.remove("init")
 
+    if args.debug_run_only_one_server is True:
+        args.save_info_logs = True
+
     workload_args = {
         "--fio_test_name": args.workload_fio_test_name,
 
@@ -790,6 +850,10 @@ if __name__ == '__main__':
         Experiment.execute_compute(args.command)
         sys.exit()
 
+    if "execute-controller" in args.commands:
+        Experiment.execute_controller(args.command)
+        sys.exit()
+
     if "execute-blocks" in args.commands:
         Experiment.execute_blocks(args.command)
         sys.exit()
@@ -811,30 +875,29 @@ if __name__ == '__main__':
         config=json.dumps({
             "max_number_vols": args.max_number_vols,
             "learning_algorithm": args.learning_algorithm,
+            "restart_controller_compute_bad_volume_count_threshold": 35,
 
-            "assess_read_max_eff": "[v1] >= 0.00 or [v2] >= 0.00 or [v3] >= 0.00 or [v4] >= 0.00",
+            # ################################ BAYES NET ################################
+            # ################################ BAYES NET ################################
+            # ############################## READ BAYES NET ################################
+            "assess_read_eff_fir_bn": "vol_count == 1 or [v1] >= 0.10 or [v2] >= 0.15 or [v3] >= 0.60",
+            "assess_read_qos_fir_bn": "vol_count == 1 or [v1] >= 0.21 or [v2] >= 0.24 or [v3] >= 0.37",
+            "assess_read_str_qos_bn": "vol_count == 1 or [v1] >= 0.15 or [v2] >= 0.22",
+            # ############################# WRITE BAYES NET ################################
+            "assess_write_eff_fir_bn": "vol_count == 1 or [v1] >= 0.11 or [v2] >= 0.16 or [v3] >= 0.61",
+            "assess_write_qos_fir_bn": "vol_count == 1 or [v1] >= 0.22 or [v2] >= 0.25 or [v3] >= 0.39",
+            "assess_write_str_qos_bn": "vol_count == 1 or [v1] >= 0.17 or [v2] >= 0.24",
 
-            "assess_read_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.70",
+            # ################################ TREE  ################################
+            # ################################ TREE ################################
+            # ############################ READ TREE ################################
+            "assess_read_eff_fir": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.70 or [v3] > 0.70",
             "assess_read_qos_fir": "vol_count == 1 or [v1] >= 0.61 or [v2] >= 0.61",
-            "assess_read_str_qos": "vol_count == 1 or [v1] > 0.68 or [v2] > 0.68",
-
-
-            "assess_read_eff_fir_bn": "vol_count == 1 or [v1] > 0.15 or [v2] > 0.17 or [v3] > 0.30",
-            "assess_read_qos_fir_bn": "vol_count == 1 or [v1] >= 0.22 or [v2] >= 0.28 or [v3] > 0.51",
-            "assess_read_str_qos_bn": "vol_count == 1 or [v1] > 0.68 or [v2] > 0.68",
-            # ################################ FOR WRITE ################################
-            # ################################ FOR WRITE ################################
-            # ################################ FOR WRITE ################################
-            "assess_write_max_eff": "[v1] >= 0.00 or [v2] >= 0.00 or [v3] >= 0.00 or [v4] >= 0.00",
-
-            "assess_write_eff_fir": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70 or [v3] > 0.70",
+            "assess_read_str_qos": "vol_count == 1 or [v1] >= 0.68 or [v2] >= 0.68",
+            # ############################# WRITE TREE ################################
+            "assess_write_eff_fir": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.70 or [v3] > 0.70",
             "assess_write_qos_fir": "vol_count == 1 or [v1] >= 0.65 or [v2] >= 0.65",
-            "assess_write_str_qos": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70",
-
-
-            "assess_write_eff_fir_bn": "vol_count == 1 or [v1] > 0.18 or [v2] > 0.20 or [v3] > 0.35",
-            "assess_write_qos_fir_bn": "vol_count == 1 or [v1] >= 0.27 or [v2] >= 0.35 or [v3] > 0.57",
-            "assess_write_str_qos_bn": "vol_count == 1 or [v1] > 0.70 or [v2] > 0.70",
+            "assess_write_str_qos": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.70",
 
             "assessment_policy": args.assessment_policy,
             "description": args.description,
@@ -852,7 +915,10 @@ if __name__ == '__main__':
             "training_dataset_size": args.training_dataset_size,
 
             "volume_clock_calc": script_volume_clock_calc,
-            "volume_performance_meter_clock_calc": script_volume_performance_meter_clock_calc
+            "volume_performance_meter_clock_calc": script_volume_performance_meter_clock_calc,
+
+            "assess_read_max_eff": "[v1] >= 0.00 or [v2] >= 0.00 or [v3] >= 0.00 or [v4] >= 0.00",
+            "assess_write_max_eff": "[v1] >= 0.00 or [v2] >= 0.00 or [v3] >= 0.00 or [v4] >= 0.00"
         })
     )
 

@@ -249,4 +249,6 @@ def get_path_for_tenant(var=""):
 
 
 if __name__ == '__main__':
+    out = run_command2("ls /root > ls.out")
+    print ("ou: " + out)
     pass

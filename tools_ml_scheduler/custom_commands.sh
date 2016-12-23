@@ -75,6 +75,10 @@ function c_novaDown(){
       nova service-list | grep down
 }
 
+function c_controllerRestartServices(){
+    sudo python /root/cinder/cinder/MLScheduler/experiment.py execute-controller --command "service keystone restart; service nova-api restart; service nova-cert restart; service nova-consoleauth restart; service nova-scheduler restart; service nova-conductor restart; service nova-novncproxy restart; service neutron-server restart; service memcached restart"
+}
+
 function c_hostsBadTenants(){
     sudo python /root/cinder/cinder/MLScheduler/experiment.py execute --command "sudo fdisk -l | grep error" --print_output True --print_output_if_have_error True | less
 }

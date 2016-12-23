@@ -10,6 +10,7 @@ import classification
 import communication
 from datetime import datetime
 
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urlparse.urlparse(self.path)
@@ -116,6 +117,19 @@ class Handler(BaseHTTPRequestHandler):
     def _handle_request(self, path, parameters):
 
         # tools.log("_handle_request: %s" % (path), debug=True)
+
+        if path == "/get_error_log_count":
+
+            exp_id = 0
+            if parameters.has_key("experiment_id"):
+                exp_id = long(parameters["experiment_id"][0])
+
+            result = database.execute_get_procedure_dictionary("get_error_log_count", args=(exp_id,))
+
+            if len(result) == 1:
+                return result[0]['bad_volume_count']
+
+            return None
 
         if path == "/get_prediction":
             classifier = classification.Classification.get_current_or_initialize(
