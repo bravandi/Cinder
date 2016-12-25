@@ -34,6 +34,24 @@ def get_time_difference(start_time, end_time=None):
     return difference.total_seconds()
 
 
+def run_command(parameters, debug=False, no_pipe=False):
+    if no_pipe is True:
+        p = subprocess.Popen(parameters)
+
+        return p
+
+    else:
+
+        p = subprocess.Popen(parameters, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out, err = p.communicate()
+
+        if debug:
+            print("\nRUN_COMMAND:\n" + str(parameters) + "\nSTDOUT -->" + out + "\nSTDERR --> " + err)
+
+        return out, err, p
+
+
 def run_command2(command, get_out=False, debug=False, no_pipe=False):
     task = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 

@@ -18,10 +18,6 @@ function c_killServiceHandler(){
 	ps -ef | grep service_handler | grep -v grep | awk '{print $2}' | xargs kill -9
 }
 
-function c_killPyCharmProc(){
-	ps -ef | grep pycharm | grep -v grep | awk '{print $2}' | xargs kill -9
-}
-
 function c_killScheduler(){
 	ps -ef | grep cinder-scheduler | grep -v grep | awk '{print $2}' | xargs kill -9
 }
@@ -95,7 +91,7 @@ function c_hostsRunningWorkloadGen(){
 }
 
 function c_hostsExecuteCmd(){
-    python /root/cinder/cinder/MLScheduler/experiment.py execute --command "$1" --print_output false  --print_output_if_have_error true | less
+    python /root/cinder/cinder/MLScheduler/experiment.py execute --command "$1" --print_output true  --print_output_if_have_error true | less
 }
 
 function c_delErrVolumes(){
@@ -124,10 +120,6 @@ function c_getCinderProc(){
 
 function c_getExperiment(){
 	ps aux | grep experiment
-}
-
-function c_getPyCharmProc(){
-	ps aux | grep pycharm
 }
 
 function c_source(){

@@ -152,13 +152,6 @@ class Experiment:
 
             communication.Communication.reload()
 
-            for backend_name in tools.get_cinder_backends():
-                communication.insert_backend(
-                    experiment_id=ex_id,
-                    cinder_id=backend_name,
-                    capacity=100,
-                )
-
             try:
                 communication.reset_java_service()
             except:
@@ -167,6 +160,14 @@ class Experiment:
             tools.log("Created a new experiment. id: " + str(ex_id), code="created-new-experiment", insert_db=False)
 
         Experiment.experiment = communication.Communication.get_current_experiment()
+
+        # database wont add duplicates
+        for backend_name in tools.get_cinder_backends():
+            communication.insert_backend(
+                experiment_id=Experiment.experiment["id"],
+                cinder_id=backend_name,
+                capacity=100,
+            )
 
         if Experiment.experiment is None:
             tools.log(
@@ -190,13 +191,23 @@ class Experiment:
                 type="INFO", code="resume", file_name="experiment.py", function_name="Experiment",
                 message="Resume experiment. Experiment id: %s" % str(Experiment.experiment["id"]))
 
+        number_of_servers_to_start_simulation = 0
+
         nova = tools.get_nova_client()
         for server in nova.servers.list():
+
+            if (
+                            "start" in _args_commands or "start-new" in _args_commands
+            ) and number_of_servers_to_start_simulation >= communication.Communication.get_config(
+                "number_of_servers_to_start_simulation"):
+
+                break
 
             if server.status != 'ACTIVE':
                 continue
 
             try:
+
                 server_ip = server.networks['provider'][0]
 
                 if self.debug_run_only_one_server:
@@ -213,11 +224,17 @@ class Experiment:
 
                 if "start-new" in _args_commands or "start" in _args_commands:
                     result = ssh_client.execute("sudo ps aux | grep workload_generator")
-                    if len(result["out"]) > 0:
+                    if len(result["out"]) > 2:  # one is for grep another is for ssh
 
                         for out in result["out"]:
                             if "workload_generator.py" in out:
                                 ssh_client.close()
+                                tools.log(
+                                    type="WARNING",
+                                    code="start_exp_already_running",
+                                    file_name="experiment.py",
+                                    function_name="__init__",
+                                    message="server %s is already running at least one workload_generator.py instance." % server_ip)
                                 continue
 
                 result = ssh_client.execute("sudo fdisk -l")
@@ -230,19 +247,24 @@ class Experiment:
                     ssh_client.close()
                     continue
 
+                tenant = nova.servers.get(server.id)
+
                 self.servers.append({
                     "id": server.id,
                     "ssh": ssh_client,
                     "ip": server_ip,
-                    "name": server.name
+                    "name": server.name,
+                    "hypervisor": tenant.to_dict()['OS-EXT-SRV-ATTR:hypervisor_hostname']
                 })
+
+                number_of_servers_to_start_simulation = number_of_servers_to_start_simulation + 1
 
             except Exception as err:
                 tools.log(
                     type="ERROR",
                     code="ssh",
                     file_name="experiment.py",
-                    function_name="",
+                    function_name="__init__",
                     message="can not create SSH client for %s" % server_ip,
                     exception=err)
 
@@ -289,8 +311,9 @@ class Experiment:
 
             self._run_command(server, "sudo echo '%s' > %s" % (server["id"], tools.get_path_for_tenant("~/tenantid")))
 
-            self._run_command(server, "sudo echo '%s@%s' > %s" %
-                              (server["name"], server["ip"], tools.get_path_for_tenant("~/tenant_description")))
+            self._run_command(server, "sudo echo '%s@%s@%s' > %s" %
+                              (server["hypervisor"], server["ip"], server["name"],
+                               tools.get_path_for_tenant("~/tenant_description")))
 
             # self._run_command(server, "sudo mkdir /media/")
 
@@ -327,30 +350,6 @@ class Experiment:
 
         return ret
 
-    def start_performance_evaluators(self, arguments):
-
-        pass
-        # args = []
-        # for k, v in arguments.iteritems():
-        #     args.append(str(k))
-        #     args.append(str(v))
-        #
-        # self._run_command_on_all_servers(
-        #     "sudo nohup python %s %s >%s 2>%s &" %
-        #     (
-        #         tools.get_path_expanduser("~/MLSchedulerAgent/performance_evaluation.py"),
-        #         " ".join(args),
-        #         tools.get_path_expanduser("~/performance_evaluation.out"),
-        #         tools.get_path_expanduser("~/performance_evaluation.err")
-        #     )
-        # )
-
-    def kill_performance_evaluators(self):
-        self.run_command_on_all_servers(
-            "ps -ef | grep python | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
-            # "ps -ef | grep performance_evaluation | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
-        )
-
     def kill_workload_generator_all_servers(self):
         self.run_command_on_all_servers(
             "ps -ef | grep python | grep -v grep | awk '{print $2}' | xargs sudo kill -9"
@@ -375,7 +374,15 @@ class Experiment:
     def start_workload_generators(self, workload_args, performance_args):
 
         try:
-            tools.run_command2("rm /root/exp_*")
+            command = ["sudo", "rm", "/root/exp_*"]
+            out, err, p = tools.run_command(command)
+            tools.log(
+                type="INFO2",
+                code="rm_root_exp*",
+                file_name="experiment.py",
+                function_name="start_workload_generators",
+                message="%s @@ %s" % (" ".join(command), out),
+                exception=err)
         except Exception as err:
             pass
 
@@ -390,7 +397,7 @@ class Experiment:
 
             number_of_servers_running = number_of_servers_running + 1
 
-            print ("number_of_servers_running: " + str(number_of_servers_running))
+            print ("number of servers currently running: " + str(number_of_servers_running))
 
         last_bad_vol_count = 0
 
@@ -398,7 +405,8 @@ class Experiment:
 
             current_bad_vol_count = communication.get_error_log_count(experiment_id=self.experiment["id"])
 
-            if current_bad_vol_count - last_bad_vol_count >= communication.Communication.get_config("restart_controller_compute_bad_volume_count_threshold"):
+            if "start-new" in _args_commands and current_bad_vol_count - last_bad_vol_count >= communication.Communication.get_config(
+                    "restart_controller_compute_bad_volume_count_threshold"):
 
                 tools.log(
                     type="WARNING",
@@ -596,7 +604,7 @@ def args_load_defaults(args):
         if args.debug_server_ip is None:
             args.debug_server_ip = ""
 
-    if args.debug_server_ip is not None:
+    if args.debug_server_ip is not None and args.debug_server_ip.strip() != '':
         args.debug_run_only_one_server = True
         args.print_output = True
         args.print_output_if_have_error = True
@@ -614,6 +622,8 @@ def args_load_defaults(args):
     # args.read_is_priority
     # args.performance_show_fio_output
 
+    if args.volume_attach_time_out is None:
+        args.volume_attach_time_out = 40
     if args.workload_fio_test_name is None:
         args.workload_fio_test_name = "workload_generator.fio"
     if args.workload_wait_after_volume_rejected is None:
@@ -658,9 +668,9 @@ if __name__ == '__main__':
 
     parser.add_argument('commands', type=str, nargs="+",
                         choices=[
-                            'start', 'shutdown', 'start-new', 'workload', 'del-avail-err', 'del-err',
-                            'performance', 'det-del', 'kill-workload', 'execute-compute', 'execute-controller',
-                            'kill-performance', 'execute', 'init', 'create-experiment', 'execute-blocks'],
+                            "start", "shutdown", "start-new", "workload", "del-avail-err", "del-err",
+                            "det-del", "kill-workload", "execute-compute", "execute-controller",
+                            "execute", "init", "create-experiment", "execute-blocks"],
                         help=
                         """
                         Manage experiments.
@@ -717,6 +727,9 @@ if __name__ == '__main__':
     # END PERFORMANCE CONFIGURATION
 
     # WORKLOAD GENERATOR
+    parser.add_argument('--volume_attach_time_out', default=40, metavar='', type=int,
+                        required=False,
+                        help='volume attach timeout default=40')
 
     parser.add_argument("--workload_fio_test_name", default="workload_generator.fio", metavar='', type=str,
                         required=False,
@@ -792,13 +805,13 @@ if __name__ == '__main__':
         is_shutdown = True
 
     if "start" in args.commands:
-        args.commands = ["init", "workload", "performance"]
+        args.commands = ["init", "workload", "start"]
         if args.skip_init is True:
             args.commands.remove("init")
         args.new = False
 
     if "start-new" in args.commands:
-        args.commands = ["init", "workload", "performance"]
+        args.commands = ["init", "workload", "start-new"]
         if "init" in args.commands and args.skip_init is True:
             args.commands.remove("init")
         args.new = True
@@ -875,17 +888,18 @@ if __name__ == '__main__':
         config=json.dumps({
             "max_number_vols": args.max_number_vols,
             "learning_algorithm": args.learning_algorithm,
-            "restart_controller_compute_bad_volume_count_threshold": 35,
+            "restart_controller_compute_bad_volume_count_threshold": 60,
+            "number_of_servers_to_start_simulation": 40,
 
             # ################################ BAYES NET ################################
             # ################################ BAYES NET ################################
             # ############################## READ BAYES NET ################################
-            "assess_read_eff_fir_bn": "vol_count == 1 or [v1] >= 0.10 or [v2] >= 0.15 or [v3] >= 0.60",
-            "assess_read_qos_fir_bn": "vol_count == 1 or [v1] >= 0.21 or [v2] >= 0.24 or [v3] >= 0.37",
+            "assess_read_eff_fir_bn": "vol_count == 1 or [v1] >= 0.62 or [v2] >= 0.53 or [v3] >= 0.44",
+            "assess_read_qos_fir_bn": "vol_count == 1 or [v1] >= 0.67 or [v2] >= 0.60",
             "assess_read_str_qos_bn": "vol_count == 1 or [v1] >= 0.15 or [v2] >= 0.22",
             # ############################# WRITE BAYES NET ################################
-            "assess_write_eff_fir_bn": "vol_count == 1 or [v1] >= 0.11 or [v2] >= 0.16 or [v3] >= 0.61",
-            "assess_write_qos_fir_bn": "vol_count == 1 or [v1] >= 0.22 or [v2] >= 0.25 or [v3] >= 0.39",
+            "assess_write_eff_fir_bn": "vol_count == 1 or [v1] >= 0.65 or [v2] >= 0.55 or [v3] >= 0.47",
+            "assess_write_qos_fir_bn": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.65",
             "assess_write_str_qos_bn": "vol_count == 1 or [v1] >= 0.17 or [v2] >= 0.24",
 
             # ################################ TREE  ################################
@@ -905,7 +919,7 @@ if __name__ == '__main__':
             "read_is_priority": args.read_is_priority,
             "is_training": is_training,
             "min_required_vpm_records": 150,  # used in [get_training_dataset] stored procedure
-            "volume_attach_time_out": 35,
+            "volume_attach_time_out": args.volume_attach_time_out,
             "wait_volume_status_timeout": 15,
 
             "workload_args": dict([(z[2:], w) for z, w in workload_args.iteritems()]),
@@ -928,9 +942,6 @@ if __name__ == '__main__':
     if "workload" in args.commands:
         e.start_workload_generators(workload_args, performance_args)
 
-    if "performance" in args.commands:
-        e.start_performance_evaluators(performance_args)
-
     if "kill-workload" in args.commands:
 
         e.kill_workload_generator_all_servers()
@@ -940,9 +951,6 @@ if __name__ == '__main__':
             time.sleep(3)
 
         e.kill_workload_generator_all_servers()
-
-    if "kill-performance" in args.commands:
-        e.kill_performance_evaluators()
 
     if "det-del" in args.commands:
         e.detach_delete_all_servers_volumes()
