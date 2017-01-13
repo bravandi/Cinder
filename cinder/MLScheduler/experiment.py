@@ -896,22 +896,22 @@ if __name__ == '__main__':
             # ############################## READ BAYES NET ################################
             "assess_read_eff_fir_bn": "vol_count == 1 or [v1] >= 0.62 or [v2] >= 0.53 or [v3] >= 0.44",
             "assess_read_qos_fir_bn": "vol_count == 1 or [v1] >= 0.67 or [v2] >= 0.60",
-            "assess_read_str_qos_bn": "vol_count == 1 or [v1] >= 0.15 or [v2] >= 0.22",
+            "assess_read_str_qos_bn": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.65",
             # ############################# WRITE BAYES NET ################################
             "assess_write_eff_fir_bn": "vol_count == 1 or [v1] >= 0.65 or [v2] >= 0.55 or [v3] >= 0.47",
             "assess_write_qos_fir_bn": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.65",
-            "assess_write_str_qos_bn": "vol_count == 1 or [v1] >= 0.17 or [v2] >= 0.24",
+            "assess_write_str_qos_bn": "vol_count == 1 or [v1] >= 0.63 or [v2] >= 0.68",
 
             # ################################ TREE  ################################
             # ################################ TREE ################################
             # ############################ READ TREE ################################
             "assess_read_eff_fir": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.70 or [v3] > 0.70",
-            "assess_read_qos_fir": "vol_count == 1 or [v1] >= 0.61 or [v2] >= 0.61",
-            "assess_read_str_qos": "vol_count == 1 or [v1] >= 0.68 or [v2] >= 0.68",
+            "assess_read_qos_fir": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.67",
+            "assess_read_str_qos": "vol_count == 1 or [v1] >= 0.90",
             # ############################# WRITE TREE ################################
             "assess_write_eff_fir": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.70 or [v3] > 0.70",
-            "assess_write_qos_fir": "vol_count == 1 or [v1] >= 0.65 or [v2] >= 0.65",
-            "assess_write_str_qos": "vol_count == 1 or [v1] >= 0.70 or [v2] >= 0.70",
+            "assess_write_qos_fir": "vol_count == 1 or [v1] >= 0.73 or [v2] >= 0.70",
+            "assess_write_str_qos": "vol_count == 1 or [v1] >= 0.93",
 
             "assessment_policy": args.assessment_policy,
             "description": args.description,
@@ -960,3 +960,4 @@ if __name__ == '__main__':
         e.run_command_on_all_servers(args.command)
 
     e.close_all_ssh_client()
+
